@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="/src/styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>프로필 편집</title>
+  </head>
+  <body>
+    <div class="app">
+      <header class="header">
+        <div class="brand">프로필 편집</div>
+        <div class="subtitle">계정 정보와 조언 설정</div>
+      </header>
+
+      <!-- 계정 1 -->
+      <section class="settings-block">
+        <div class="settings-head">
+          <strong>계정 정보</strong>
+        </div>
+        <div class="settings-body">
+          <label class="login-label">이름</label>
+          <input
+            type="text"
+            id="acc-name"
+            class="key-input"
+            placeholder="예: 내 메인 계정"
+            autocomplete="off"
+          />
+
+          <label class="login-label">UID</label>
+          <input
+            type="text"
+            id="acc-uid"
+            class="key-input"
+            placeholder="예: 784667533"
+            maxlength="9"
+            autocomplete="off"
+          />
+
+          <label class="login-label">서버 (UID 입력 시 자동)</label>
+          <div id="server-display" class="detail-value">(자동 감지)</div>
+
+          <button id="acc-save-btn" class="mini-btn" style="margin-top: 12px">
+            계정 정보 저장
+          </button>
+        </div>
+      </section>
+
+      <!-- 유저 정보 -->
+      <section class="settings-block">
+        <div class="settings-head">
+          <strong>유저 정보</strong>
+        </div>
+        <div class="settings-body">
+          <label class="login-label">수준</label>
+          <select id="level-select" class="key-input">
+            <option value="beginner">초급</option>
+            <option value="intermediate">중급</option>
+            <option value="advanced">고급</option>
+          </select>
+
+          <label class="login-label">플레이 방식 (다중 선택)</label>
+          <div class="check-group">
+            <label class="check-row">
+              <input type="checkbox" name="playMode" value="solo" />
+              혼자
+            </label>
+            <label class="check-row">
+              <input type="checkbox" name="playMode" value="multi" />
+              다중 (친구와)
+            </label>
+          </div>
+
+          <label class="login-label">관심 스타일 (다중 선택)</label>
+          <div class="check-group">
+            <label class="check-row"
+              ><input type="checkbox" name="styles" value="story" />
+              스토리</label
+            >
+            <label class="check-row"
+              ><input type="checkbox" name="styles" value="collection" /> 캐릭터
+              수집</label
+            >
+            <label class="check-row"
+              ><input type="checkbox" name="styles" value="resource" /> 자원
+              수집</label
+            >
+            <label class="check-row"
+              ><input type="checkbox" name="styles" value="abyss" />
+              나선비경</label
+            >
+            <label class="check-row"
+              ><input type="checkbox" name="styles" value="theater" />
+              환상극</label
+            >
+            <label class="check-row"
+              ><input type="checkbox" name="styles" value="leyline" /> 지맥
+              제압전</label
+            >
+            <label class="check-row"
+              ><input type="checkbox" name="styles" value="realm" /> 선계</label
+            >
+            <label class="check-row"
+              ><input type="checkbox" name="styles" value="seaborn" /> 별바다
+              세계</label
+            >
+          </div>
+
+          <label class="login-label">과금 수준</label>
+          <select id="spending-select" class="key-input">
+            <option value="none">무과금 (0원)</option>
+            <option value="light">소과금 (공월+기행)</option>
+            <option value="medium">중과금 (월 5~10만원)</option>
+            <option value="heavy">핵과금 (제한 없음)</option>
+          </select>
+
+          <p id="spending-hint" class="info-small" style="margin-top: 8px"></p>
+        </div>
+      </section>
+
+      <!-- AI 답변 스타일 -->
+      <section class="settings-block">
+        <div class="settings-head">
+          <strong>AI 답변 스타일</strong>
+        </div>
+        <div class="settings-body">
+          <label class="login-label">답변 길이</label>
+          <select id="answer-style-select" class="key-input">
+            <option value="detail">자세한 설명 (초보 추천)</option>
+            <option value="normal">보통 (중수 추천)</option>
+            <option value="simple">간단 (고수 추천)</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- 저장 -->
+      <section class="run-section">
+        <button id="profile-save-btn" class="run-btn">저장</button>
+      </section>
+
+      <div id="status" class="status-box"></div>
+    </div>
+
+    <script type="module" src="/src/profile.ts"></script>
+  </body>
+</html>

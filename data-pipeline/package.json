@@ -1,0 +1,19 @@
+{
+  "name": "data-pipeline",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "enka-network-api": "^5.1.2",
+    "node-hoyolab": "^2.0.2"
+  },
+  "allowScripts": {
+    "enka-network-api@5.1.2": true
+  }
+}

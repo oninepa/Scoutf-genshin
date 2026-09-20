@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="/src/styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pointip-Free</title>
+  </head>
+  <body>
+    <div class="app">
+      <!-- 헤더 -->
+      <header class="header">
+        <div class="brand">Pointip-Free</div>
+        <div class="subtitle">원신 · 한국어</div>
+      </header>
+
+      <!-- 배너 -->
+      <section class="banner">
+        <div class="banner-inner">
+          <span class="banner-tag">공지</span>
+          <span class="banner-text"
+            >원신 새 시즌 소식을 기다리는 중입니다.</span
+          >
+        </div>
+      </section>
+
+      <!-- 계정 탭 -->
+      <section class="tabs-section" id="tabs-section">
+        <div class="account-tabs" id="account-tabs"></div>
+      </section>
+
+      <!-- 계정 페이지 (동적) -->
+      <section class="account-page" id="account-page">
+        <div class="loading-page">불러오는 중...</div>
+      </section>
+
+      <!-- 푸터 -->
+      <footer class="footer">
+        <div class="footer-line">
+          <a href="#" id="discord-link">Discord</a>
+          <span>·</span>
+          <a href="#" id="policy-link">정책</a>
+          <span>·</span>
+          <a href="#" id="oss-link">오픈소스</a>
+        </div>
+        <div class="footer-version">v0.1.0</div>
+      </footer>
+    </div>
+
+    <!-- 쿠키 입력 모달 -->
+    <div id="cookie-modal" class="modal hidden">
+      <div class="modal-content">
+        <h3>쿠키 설정</h3>
+        <p class="modal-guide">
+          <strong>가져오는 방법:</strong><br />
+          1.
+          <a href="https://www.hoyolab.com" target="_blank">hoyolab.com</a>
+          로그인<br />
+          2. F12 → Application → Cookies → hoyolab.com<br />
+          3. 아래 값들을 복사해서 붙여넣기
+        </p>
+        <label class="login-label">ltoken_v2</label>
+        <input
+          type="text"
+          id="cookie-ltoken"
+          class="key-input"
+          placeholder="v2_..."
+        />
+        <label class="login-label">ltuid_v2</label>
+        <input
+          type="text"
+          id="cookie-ltuid"
+          class="key-input"
+          placeholder="숫자"
+        />
+        <div class="modal-buttons">
+          <button id="cookie-save-btn" class="run-btn">저장</button>
+          <button id="cookie-cancel-btn" class="mini-btn">취소</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

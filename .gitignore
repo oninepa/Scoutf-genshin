@@ -1,0 +1,67 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Tauri / Rust
+target/
+src-tauri/target/
+
+# Vite
+dist/
+.vite/
+
+# 환경 변수 (쿠키)
+.env
+.env.local
+*.env
+
+# API 키 / 개인 데이터
+config.json
+advisor/config.json
+advisor/auth/
+advisor/accounts/*/cookie.txt
+advisor/accounts/*/account.json
+advisor/accounts/*/profile.json
+advisor/cache/
+advisor/profiles/
+advisor/tts_cache/
+advisor/logs/
+advisor/accounts/
+advisor/.cache/
+
+# 데이터 (개인 계정)
+data-pipeline/output/*.json
+spike/output/configs/
+spike/output/results.json
+spike/output/monsters.json
+
+# 큰 폴더
+MeloTTS/
+MeloTTS-Windows/
+spike/node_modules/
+desktop/pointip-desktop/node_modules/
+data-pipeline/node_modules/
+advisor/node_modules/
+
+# 로그/백업
+*.log
+*.zip
+tree.txt
+tree_dirs.txt
+tree_files.txt
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

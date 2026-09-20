@@ -1,0 +1,18 @@
+{
+  "ruin_guard": {
+    "nameKr": "폐허 수호자",
+    "nameEn": "Ruin Guard",
+    "level": 100,
+    "hp": 166380,
+    "resist": 0.1,
+    "element": "physical"
+  },
+  "large_anemo_slime": {
+    "nameKr": "큰 바람 슬라임",
+    "nameEn": "Large Anemo Slime",
+    "level": 100,
+    "hp": 89041,
+    "resist": 0.1,
+    "element": "anemo"
+  }
+}

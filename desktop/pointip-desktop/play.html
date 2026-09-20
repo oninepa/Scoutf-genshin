@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="/src/styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pointip-Free · 플레이</title>
+  </head>
+  <body>
+    <div class="play-app">
+      <!-- 상단: 브리핑 + 할 일 -->
+      <div class="play-top">
+        <section class="play-section">
+          <div class="play-head">
+            <span class="play-title">📊 지난 성과</span>
+            <span id="parse-count" class="parse-count">-/-</span>
+          </div>
+          <ul id="briefing-list" class="briefing-list">
+            <li class="loading">불러오는 중...</li>
+          </ul>
+        </section>
+        <<!-- 오버레이 컨트롤 (우측 상단) -->
+        <div class="overlay-controls">
+          <button id="opacity-btn" class="overlay-btn" title="투명도">
+            🌓
+          </button>
+          <button id="pin-btn" class="overlay-btn" title="항상 위">📌</button>
+          <button id="close-btn" class="overlay-btn" title="닫기">✕</button>
+        </div>
+
+        <section class="play-section">
+          <div class="play-head">
+            <span class="play-title">🎯 지금 할 일</span>
+          </div>
+          <div id="tasks-list" class="tasks-list">
+            <div class="loading">불러오는 중...</div>
+          </div>
+        </section>
+      </div>
+
+      <!-- 하단: 대화 -->
+      <div class="play-bottom">
+        <div id="chat-log" class="chat-log"></div>
+
+        <div id="suggestions" class="suggestions"></div>
+
+        <div class="chat-input-wrap">
+          <input
+            type="text"
+            id="chat-input"
+            class="chat-input"
+            placeholder="질문을 입력하세요..."
+            autocomplete="off"
+          />
+          <button id="chat-send" class="chat-send">전송</button>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/play.ts"></script>
+  </body>
+</html>

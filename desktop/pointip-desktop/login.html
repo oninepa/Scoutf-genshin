@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="/src/styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pointip-Free 로그인</title>
+  </head>
+  <body>
+    <div class="login-app">
+      <header class="login-header">
+        <div class="login-brand">Pointip-Free</div>
+        <div class="login-subtitle">원신 · 한국어</div>
+      </header>
+
+      <div class="login-card">
+        <!-- 탭 -->
+        <div class="login-tabs">
+          <button id="tab-login" class="login-tab active">로그인</button>
+          <button id="tab-register" class="login-tab">회원가입</button>
+        </div>
+
+        <!-- 이메일 -->
+        <label class="login-label">이메일</label>
+        <input
+          type="email"
+          id="email-input"
+          class="login-input"
+          placeholder="example@gmail.com"
+          autocomplete="email"
+        />
+
+        <!-- 비밀번호 -->
+        <label class="login-label">비밀번호</label>
+        <input
+          type="password"
+          id="password-input"
+          class="login-input"
+          placeholder="6자 이상"
+          autocomplete="current-password"
+        />
+
+        <!-- 에러/성공 메시지 -->
+        <div id="login-status" class="login-status"></div>
+
+        <!-- 제출 -->
+        <button id="submit-btn" class="login-submit">로그인</button>
+
+        <p class="login-note">
+          ※ 지금은 로컬 계정입니다. 나중에 정식 서비스로 이전됩니다.
+        </p>
+      </div>
+    </div>
+    <script type="module" src="/src/login.ts"></script>
+  </body>
+</html>

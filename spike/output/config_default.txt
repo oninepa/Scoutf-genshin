@@ -1,0 +1,67 @@
+# gcsim config 자동 생성
+# 사용법: gcsim -c 이파일.txt
+
+options swap_delay=12 iteration=1000 workers=8
+
+다이루크 char lvl=70 cons=0 talent=1,1,1
+이무기 검 weapon lvl=70 ref=1
+다이루크 add set=검투사의 피날레 count=1
+다이루크 add stats=hp=3967 em=47,def=35,hp%=0.1516,def%=0.0510
+다이루크 add set=불타오르는 화염의 마녀 count=1
+다이루크 add stats=atk=209 atk%=0.0373,em=13,hp%=0.0466,cd=0.1244
+다이루크 add set=불 위를 걷는 현인 count=1
+다이루크 add stats=atk%=0.2410 def=17,atk=14,cd=0.0435,hp=215
+다이루크 add set=전투광 count=1
+다이루크 add stats=hp%=0.2160 er=0.0272,def=11,atk%=0.0280
+다이루크 add set=전투광 count=1
+다이루크 add stats=cr=0.2080 em=17,def=13,atk%=0.0326,er=0.0828
+
+노엘 char lvl=70 cons=0 talent=1,1,1
+고화 프로토타입 weapon lvl=70 ref=1
+노엘 add set=유구한 반암 count=1
+노엘 add stats=hp=2474 hp%=0.0466,er=0.0363,em=17,def%=0.0583
+노엘 add set=교관 count=1
+노엘 add stats=atk=173 def%=0.0583,hp=215,er=0.0363,cr=0.0218
+노엘 add set=교관 count=1
+노엘 add stats=em=97 er=0.0466,hp=215,atk=11,def=15
+노엘 add set=교관 count=1
+노엘 add stats=geo%=0.3300 em=17,def=31,hp%=0.0466,def%=0.0525
+노엘 add set=교관 count=1
+노엘 add stats=def%=0.3020 cr=0.0249,cd=0.0435,er=0.0466,hp=191
+
+케이아 char lvl=70 cons=1 talent=1,1,1
+참암 프로토타입 weapon lvl=70 ref=1
+케이아 add set=얼음바람 속에서 길잃은 용사 count=1
+케이아 add stats=hp=2474 def%=0.0583,def=13,atk=11,cd=0.0560
+케이아 add set=얼음바람 속에서 길잃은 용사 count=1
+케이아 add stats=atk=161 def=13,hp%=0.0420,atk%=0.0373,cr=0.0218
+케이아 add set=얼음바람 속에서 길잃은 용사 count=1
+케이아 add stats=atk%=0.2410 cd=0.0622,atk=16,er=0.0466,cr=0.0560
+케이아 add set=옛 왕실의 의식 count=1
+케이아 add stats=cryo%=0.2680 def%=0.1166,hp=269,def=16,atk=18
+케이아 add set=얼음바람 속에서 길잃은 용사 count=1
+케이아 add stats=atk%=0.2410 def=15,hp%=0.0326,em=15,er=0.0466
+
+플린스 char lvl=70 cons=0 talent=1,1,1
+페보니우스 장창 weapon lvl=80 ref=1
+플린스 add set=뇌명을 평정한 존자 count=1
+플린스 add stats=hp=3358 cr=0.0350,def%=0.0510,hp%=0.1632,em=16
+플린스 add set=전투광 count=1
+플린스 add stats=atk=161 cd=0.0435,er=0.0414,hp=191,cr=0.0249
+플린스 add set=견고한 천암 count=1
+플린스 add stats=atk%=0.2410 def%=0.0466,atk=14,hp=239,cd=0.0497
+플린스 add set=전투광 count=1
+플린스 add stats=atk%=0.2160 hp=100,atk=7,hp%=0.0280
+플린스 add set=전투광 count=1
+플린스 add stats=atk%=0.2410 atk=16,def=19,def%=0.0408,hp=191
+
+# 로테이션 (Tier B 폴백: 스킬 → 버스트 순서)
+active 다이루크;
+다이루크 skill;
+노엘 skill;
+케이아 skill;
+플린스 skill;
+다이루크 burst;
+노엘 burst;
+케이아 burst;
+플린스 burst;

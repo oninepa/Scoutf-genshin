@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="/src/styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LLM 설정</title>
+  </head>
+  <body>
+    <div class="app">
+      <header class="header">
+        <div class="brand">LLM 설정</div>
+        <div class="subtitle">Groq 또는 OpenRouter 중 하나 이상</div>
+      </header>
+
+      <!-- Groq -->
+      <section class="settings-block">
+        <div class="settings-head">
+          <strong>Groq</strong>
+          <span class="tag-free">무료 추천</span>
+        </div>
+        <div class="settings-body">
+          <p class="info">
+            무료, 초고속. 가입 즉시 키 발급. 신용카드 불필요.<br />
+            발급:
+            <a href="https://console.groq.com/keys" target="_blank"
+              >console.groq.com/keys</a
+            >
+          </p>
+          <div class="key-input-wrap">
+            <input
+              type="text"
+              id="groq-key"
+              class="key-input masked"
+              placeholder="gsk_..."
+              autocomplete="off"
+            />
+            <button class="clear-btn" data-target="groq-key" type="button">
+              ×
+            </button>
+            <button class="eye-btn" data-target="groq-key" type="button">
+              👁
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- OpenRouter -->
+      <section class="settings-block">
+        <div class="settings-head">
+          <strong>OpenRouter</strong>
+          <span class="tag-free">무료</span>
+        </div>
+        <div class="settings-body">
+          <p class="info">
+            여러 무료 모델 자동 선택.<br />
+            발급:
+            <a href="https://openrouter.ai/keys" target="_blank"
+              >openrouter.ai/keys</a
+            >
+          </p>
+          <div class="key-input-wrap">
+            <input
+              type="text"
+              id="or-key"
+              class="key-input masked"
+              placeholder="sk-or-..."
+              autocomplete="off"
+            />
+            <button class="clear-btn" data-target="or-key" type="button">
+              ×
+            </button>
+            <button class="eye-btn" data-target="or-key" type="button">
+              👁
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 사용 안내 -->
+      <section class="settings-block">
+        <div class="settings-head">
+          <strong>💡 무료로 계속 쓰는 방법</strong>
+        </div>
+        <div class="settings-body">
+          <p class="info" style="margin-left: 0">
+            지금은 <strong>무료 API</strong>를 쓰고 있어요.<br />
+            무료는 <strong>하루 사용량 제한</strong>이 있어서, 많이 쓰면 잠시
+            멈출 수 있어요.
+          </p>
+
+          <p class="info" style="margin-left: 0; margin-top: 16px">
+            <strong>1. OpenRouter 충전 (추천)</strong><br />
+            $10 (약 13,000원) 한 번 충전하면 <strong>몇 달 동안</strong> 쓸 수
+            있어요.<br />
+            훨씬 좋은 AI 모델을 쓸 수 있고, 사용량 제한이 거의 없어요.<br /><br />
+
+            <strong>방법:</strong><br />
+            1) 아래 링크 열기<br />
+            2) 구글 계정으로 로그인<br />
+            3) <strong>"Credits"</strong> 또는
+            <strong>"Add Credits"</strong> 클릭<br />
+            4) $10 입력 → 카드 결제<br />
+            5) 끝! 자동으로 더 결제되지 않아요.<br /><br />
+
+            <a href="https://openrouter.ai/credits" target="_blank">
+              → https://openrouter.ai/credits </a
+            ><br />
+
+            <span class="info-small">
+              ⓘ 한 번만 결제. 자동 갱신 없음.<br />
+              ⓘ $10 = gpt-4o-mini 기준 약 1,000만 토큰 (일반 사용 몇 달).
+            </span>
+          </p>
+
+          <p class="info" style="margin-left: 0; margin-top: 16px">
+            <strong>2. Groq (무료 백업)</strong><br />
+            Groq은 <strong>완전 무료</strong>지만 하루 사용량이 적어요.<br />
+            OpenRouter 없이 Groq만 쓸 수도 있지만, 자주 멈출 수 있어요.<br /><br />
+
+            무료 키 발급:
+            <a href="https://console.groq.com/keys" target="_blank"
+              >console.groq.com/keys</a
+            ><br />
+
+            <span class="info-small">
+              ⓘ 신용카드 필요 없음. 결제 안 됨.<br />
+              ⓘ 무료 한도: 하루 사용량 제한 있음.
+            </span>
+          </p>
+
+          <p class="info" style="margin-left: 0; margin-top: 16px">
+            <strong>3. 키를 어디에 넣나요?</strong><br />
+            위 <strong>Groq</strong> 또는 <strong>OpenRouter</strong> 칸에
+            붙여넣기 → <strong>[저장]</strong> 클릭.<br />
+
+            <span class="info-small">
+              ⓘ 둘 다 넣으면 자동으로 번갈아 사용해요.<br />
+              ⓘ 하나만 넣어도 괜찮아요.<br />
+              ⓘ 키는 본인 PC에만 저장됩니다. 외부로 전송되지 않아요.
+            </span>
+          </p>
+        </div>
+      </section>
+
+      <!-- 저장 -->
+      <section class="run-section">
+        <button id="save-btn" class="run-btn">저장</button>
+      </section>
+
+      <div id="status" class="status-box"></div>
+    </div>
+    <script type="module" src="/src/llm-settings.ts"></script>
+  </body>
+</html>
