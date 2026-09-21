@@ -1,18 +1,12 @@
-Genshin-ScoutF
-
-
+ScoutF-Genshin
 
 원신을 위한 AI 도우미. Pointip-Free 프로젝트의 코드명.
-
-
-
-
 
 정체성
 
 \------
 
-프로그램명        Genshin-ScoutF
+프로그램명        ScoutF-Genshin
 
 코드명            Pointip-Free
 
@@ -26,10 +20,6 @@ AI 파트너         지니 (Genie)
 
 라이선스          MIT / Apache 2.0 (상업용 안전)
 
-
-
-
-
 개요
 
 \----
@@ -41,10 +31,6 @@ AI 파트너         지니 (Genie)
 \- 초기 버전: 텍스트 입력 → 텍스트 출력
 
 \- 음성·하이브리드는 이후 패치
-
-
-
-
 
 기술 스택
 
@@ -61,10 +47,6 @@ STT (예정)      nodejs-whisper (MIT)
 데이터          Enka API, HoYoLab, gcsim
 
 언어            Node.js (백엔드), TypeScript (Tauri), Python (데이터 파이프라인)
-
-
-
-
 
 폴더 구조
 
@@ -86,22 +68,15 @@ Pointip-Free/
 
 &#x20; README.md
 
-
-
-
-
 실행 방법
 
 \---------
-
-
 
 1\. 백엔드 서버 (필수)
 
 &#x20;  cd advisor
 
 &#x20;  node server.js
-
 
 
 2\. Tauri UI
@@ -111,16 +86,11 @@ Pointip-Free/
 &#x20;  npm run tauri dev
 
 
-
 3\. 데이터 파이프라인 (수동)
 
 &#x20;  cd data-pipeline
 
 &#x20;  python fetch-hoyolab.py
-
-
-
-
 
 환경 요구사항
 
