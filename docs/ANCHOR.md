@@ -1,14 +1,10 @@
 \# ANCHOR.md
 
-
-
 새 세션 시작 시 이 파일만 먼저 첨부한다.
-
-
 
 \## 프로그램 정보
 
-\- 프로그램명: Genshin-ScoutF
+\- 프로그램명: ScoutF-Genshin
 
 \- 코드명: Pointip-Free (오픈소스, 비상업)
 
@@ -19,7 +15,6 @@
 \- 페르소나: 게임 중립
 
 
-
 \## 개발 전략
 
 \- text\_to\_text 완성 → 1차 배포 → 이후 음성 패치
@@ -28,8 +23,7 @@
 
 \- 비상업은 오픈소스, 상용 브랜드와 링크 X
 
-\- GitHub: https://github.com/oninepa/genshin-scoutf
-
+\- GitHub: https://github.com/oninepa/scoutf-genshin
 
 
 \## LLM 우선순위
