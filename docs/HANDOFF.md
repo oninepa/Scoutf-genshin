@@ -2,11 +2,7 @@ HANDOFF — 2026-09-21
 
 
 
-GitHub: https://github.com/oninepa/genshin-scoutf
-
-
-
-
+GitHub: https://github.com/oninepa/Scoutf-genshin
 
 현재 상태
 
@@ -25,9 +21,6 @@ GitHub: https://github.com/oninepa/genshin-scoutf
 \- GitHub 업로드 완료
 
 
-
-
-
 알려진 이슈
 
 \-----------
@@ -39,10 +32,6 @@ GitHub: https://github.com/oninepa/genshin-scoutf
 3\. 플레이 창 로딩 메시지 랜덤화 미완
 
 4\. docs/HANDOFF.md 이외 문서 최신화 필요
-
-
-
-
 
 다음 할 일 (우선순위)
 
@@ -59,9 +48,6 @@ GitHub: https://github.com/oninepa/genshin-scoutf
 5\. 언어 선택 시스템
 
 
-
-
-
 실행 방법
 
 \---------
@@ -71,14 +57,9 @@ GitHub: https://github.com/oninepa/genshin-scoutf
 &#x20;  node server.js
 
 
-
 2\. cd desktop/pointip-desktop
 
 &#x20;  npm run tauri dev
-
-
-
-
 
 환경
 
@@ -93,16 +74,13 @@ GitHub: https://github.com/oninepa/genshin-scoutf
 \- Windows 11
 
 
-
-
-
 다음 세션 첫 메시지 예시
 
 \------------------------
 
 "다음 세션입니다. Pointip-Free 이어서 진행합니다.
 
-GitHub: https://github.com/oninepa/genshin-scoutf
+GitHub: https://github.com/oninepa/Scoutf-genshin
 
 
 
