@@ -8,7 +8,7 @@
 
 \## 2026-09-20
 
-\- 프로그램명: Genshin-ScoutF / 코드명: Pointip-Free / 안내자: 지니(Genie)
+\- 프로그램명: ScoutF-Genshin/ 코드명: Pointip-Free / 안내자: 지니(Genie)
 
 \- 폴더: 그대로 유지 (정리는 나중)
 
@@ -16,7 +16,7 @@
 
 \- LLM 순서: OpenRouter → Groq → Ollama → BYOK
 
-\- GitHub 저장소: https://github.com/oninepa/genshin-scoutf
+\- GitHub 저장소: https://github.com/oninepa/scoutf-genshin
 
 \- 계정 1개 기본, 최대 5개 (탭)
 
