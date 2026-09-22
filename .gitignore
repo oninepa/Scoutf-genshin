@@ -68,3 +68,7 @@ Thumbs.db
 
 # gcsim (개발자 도구, 배포 X)
 spike/gcsim.exe
+
+# 자산 (평문)
+advisor/assets/*.md
+advisor/assets/prompts/

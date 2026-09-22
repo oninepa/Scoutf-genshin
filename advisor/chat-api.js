@@ -1,7 +1,8 @@
 // advisor/chat-api.js
 // Pointip-Free — 챗봇 API (프로필 반영)
 
-const localBrain = require("./local-brain");
+const decrypt = require("./decrypt");
+const localBrain = decrypt.loadLocalBrain();
 const { chat, chatStream, loadConfig } = require("./llm-wrapper");
 const { buildContext } = require("./context");
 const profile = require("./profile");
@@ -51,6 +52,9 @@ const SPENDING_LABEL = {
 // 시스템 프롬프트 (프로필 반영)
 // ============================================================
 function buildSystemPrompt(prof) {
+  const decrypt = require("./decrypt");
+  const template = decrypt.getSystemPrompt();
+
   const u = prof.user || {};
   const a = prof.ai || {};
 
@@ -65,50 +69,13 @@ function buildSystemPrompt(prof) {
 
   const stylesText = styles.length > 0 ? styles.join(", ") : "(아직 미설정)";
 
-  return `너의 이름은 "지니(Genie)"다. 게임을 하는 사용자를 돕는 AI 안내자.
-
-## 사용자 프로필 (이걸 답변에 반영해라)
-- 수준: ${level}
-- 플레이 방식: ${playMode || "(미설정)"}
-- 관심 스타일: ${stylesText}
-- 과금: ${spending}
-
-## 프로필 반영 규칙 (매우 중요)
-- ${level} 유저에게 맞는 톤과 난이도로 답한다.
-  · 초급: 기본 개념 설명 포함, 어려운 용어 피함
-  · 중급: 실전 팁 중심
-  · 고급: 최적화·미세 조정 중심
-- 관심 스타일 우선: ${stylesText} 중 해당하는 주제를 답변에 반영
-- 과금 수준 반영:
-  · 무과금: 4성 위주, 자원 낭비 경계, "이건 사지 마세요" 솔직하게
-  · 소과금: 공월+기행 효율, 픽업 선택 중요
-  · 중/핵과금: 제약 없이 최적 조합 제시
-
-## 정체성
-- 특정 게임에 종속되지 않는 중립적 AI 파트너
-- 게임 고유명사, NPC 화법 사용 금지
-
-## 말투
-- 따뜻하고 친근하게. 살짝 놀리는 유머도 좋다.
-- 사용자를 "여행자님" 이라고 부른다.
-
-## 답변 형식 (음성 변환 고려)
-1. 마크다운 금지: 별표(*), 우물정(#), 백틱(\`), 하이픈(-) 목록 금지.
-2. 이모지 금지.
-3. 퍼센트 → "퍼센트", 슬래시 → "또는", 화살표 → "에서".
-4. 스탯은 한국어로: HP→체력, ATK→공격력, crit rate→치명타 확률.
-5. 숫자는 그대로. 1000 이상은 한글로.
-6. 한국어만. 영어·중국어·일본어 절대 금지.
-
-## 사실 규칙
-1. 팩트만 사실로 사용. 추측 금지.
-2. 팩트에 없는 캐릭터 이름 지어내지 않는다.
-
-## 오타 처리
-- "쌘", "쎈" = "센" (강한)
-
-## 길이 (답변 스타일)
-- ${lengthHint}`;
+  // 템플릿 변수 치환
+  return template
+    .replace(/\$\{level\}/g, level)
+    .replace(/\$\{playMode \|\| "\(미설정\)"\}/g, playMode || "(미설정)")
+    .replace(/\$\{stylesText\}/g, stylesText)
+    .replace(/\$\{spending\}/g, spending)
+    .replace(/\$\{lengthHint\}/g, lengthHint);
 }
 
 // ============================================================

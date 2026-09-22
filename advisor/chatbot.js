@@ -2,7 +2,8 @@
 // Pointip-Free — Genie (지니) 대화형 AI
 
 const readline = require("readline");
-const localBrain = require("./local-brain");
+const decrypt = require("./decrypt");
+const localBrain = decrypt.loadLocalBrain();
 const { chat, chatStream, loadConfig } = require("./llm-wrapper");
 const { buildContext } = require("./context");
 const missions = require("./missions");

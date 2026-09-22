@@ -1,22 +1,18 @@
 // advisor/missions.js
 // Pointip-Free — 미션 아이디어 뱅크
-// missions.json 로드 + 랜덤 선택
+// missions.enc (암호화)에서 로드
 
-const fs = require("fs");
-const path = require("path");
-
-const MISSIONS_PATH = path.join(__dirname, "missions.json");
+const decrypt = require("./decrypt");
 
 let cached = null;
 
 function loadMissions() {
   if (cached) return cached;
   try {
-    const raw = fs.readFileSync(MISSIONS_PATH, "utf-8");
-    cached = JSON.parse(raw);
+    cached = decrypt.getMissions();
     return cached;
   } catch (e) {
-    console.warn("missions.json 로드 실패:", e.message);
+    console.warn("missions.enc 로드 실패:", e.message);
     return { categories: {} };
   }
 }
@@ -71,13 +67,12 @@ function randomMissions(n = 3) {
   return shuffled.slice(0, n);
 }
 
-// 카테고리 1개에서 랜덤 미션 1개 (중복 카테고리 회피용)
+// 카테고리 1개에서 랜덤 미션 1개
 function randomMissionFromCategory(categoryKey) {
   return randomMission(categoryKey);
 }
 
 // LLM 부연용: 매번 다른 카테고리에서 하나 뽑기
-// 최근 뽑힌 카테고리는 피해서 다양성 확보
 const recentCategories = [];
 const MAX_RECENT = 5;
 
@@ -107,7 +102,7 @@ function pickForLLM() {
   };
 }
 
-// 텍스트 포맷 (시스템 프롬프트 주입용)
+// 텍스트 포맷
 function formatMissionsForPrompt(missions) {
   if (!missions || missions.length === 0) return "";
   return missions
