@@ -30,33 +30,33 @@ advisor/auth/
 advisor/accounts/*/cookie.txt
 advisor/accounts/*/account.json
 advisor/accounts/*/profile.json
+advisor/accounts/
 advisor/cache/
 advisor/profiles/
 advisor/tts_cache/
 advisor/logs/
-advisor/accounts/
 advisor/.cache/
 
 # 데이터 (개인 계정)
 data-pipeline/output/*.json
-spike/output/configs/
-spike/output/results.json
-spike/output/monsters.json
+spike/output/
 
-# 큰 폴더
-MeloTTS/
-MeloTTS-Windows/
+# node_modules
 spike/node_modules/
 desktop/pointip-desktop/node_modules/
 data-pipeline/node_modules/
 advisor/node_modules/
 
-# 로그/백업
+# 로그 / 백업
 *.log
 *.zip
 tree.txt
 tree_dirs.txt
 tree_files.txt
+
+# MeloTTS (제거됨)
+MeloTTS/
+MeloTTS-Windows/
 
 # OS
 .DS_Store

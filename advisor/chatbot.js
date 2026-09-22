@@ -1,6 +1,5 @@
 // advisor/chatbot.js
 // Pointip-Free — Genie (지니) 대화형 AI
-// TTS/STT는 보류. text-to-text만.
 
 const readline = require("readline");
 const localBrain = require("./local-brain");

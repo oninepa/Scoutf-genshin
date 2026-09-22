@@ -18,7 +18,7 @@ const HOYOLAB_SRC = path.join(DATA_PIPELINE_DIR, "output");
 const HOYOLAB_DST = path.join(CACHE_DIR, "hoyolab_latest.json");
 const ROSTER_DST = path.join(CACHE_DIR, "roster_latest.json");
 
-const MAX_PER_DAY = 5;
+const MAX_PER_DAY = 10;
 const AUTO_INTERVAL_MS = 2 * 60 * 60 * 1000; // 2시간
 
 // ============================================================
