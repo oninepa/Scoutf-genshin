@@ -83,16 +83,23 @@ async function openWindow(label: string, url: string, title: string) {
     await existing.setFocus();
     return;
   }
+
+  const isPlay = label === "play";
+
   new WebviewWindow(label, {
     url,
     title,
-    width: 600,
-    height: 700,
+    width: isPlay ? 700 : 600,
+    height: isPlay ? 800 : 700,
     resizable: true,
     center: true,
+    decorations: !isPlay,
+    alwaysOnTop: isPlay,
+    transparent: isPlay,
+    minWidth: 400,
+    minHeight: 500,
   });
 }
-
 // ============================================================
 // 탭 렌더링
 // ============================================================
@@ -342,6 +349,10 @@ window.addEventListener("DOMContentLoaded", async () => {
     ?.addEventListener("click", () => {
       document.getElementById("cookie-modal")?.classList.add("hidden");
     });
+  // AI 연결 버튼
+  document.getElementById("ai-connect-btn")?.addEventListener("click", () => {
+    openWindow("llm-settings", "llm-settings.html", "AI 연결");
+  });
 
   // 푸터 링크
   document.getElementById("discord-link")?.addEventListener("click", (e) => {

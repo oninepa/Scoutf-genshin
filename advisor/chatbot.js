@@ -1,13 +1,13 @@
 // advisor/chatbot.js
 // Pointip-Free — Genie (지니) 대화형 AI
+// TTS/STT는 보류. text-to-text만.
 
 const readline = require("readline");
 const localBrain = require("./local-brain");
 const { chat, chatStream, loadConfig } = require("./llm-wrapper");
 const { buildContext } = require("./context");
-const tts = require("./tts");
 const missions = require("./missions");
-console.log("      (음성 원하시면 /voice on)");
+const { getLLMAddOn } = require("./chat-api");
 
 const UID = "784667533";
 const SKIP_LLM_TYPES = ["greeting", "thanks", "meta"];
@@ -22,7 +22,7 @@ const SYSTEM_PROMPT = `너의 이름은 "지니(Genie)"다. 게임을 하는 사
 - 따뜻하고 친근하게. 살짝 놀리는 유머도 좋다.
 - 사용자를 "여행자님" 이라고 부른다.
 
-## 답변 형식 (음성 변환 고려)
+## 답변 형식
 1. 마크다운 금지: 별표(*), 우물정(#), 백틱(\`), 하이픈(-) 목록 금지.
 2. 이모지 금지.
 3. 퍼센트 → "퍼센트", 슬래시 → "또는", 화살표 → "에서".
@@ -95,111 +95,18 @@ function handleMissionCommand(input) {
   return { handled: false };
 }
 
-async function handleVoiceCommand(input) {
-  const cmd = input.trim().toLowerCase();
-  if (cmd === "/voice off") {
-    console.log("🔇 음성 출력 OFF\n");
-    return { handled: true, voiceEnabled: false };
-  }
-  if (cmd === "/voice on") {
-    console.log("🔊 음성 출력 ON\n");
-    return { handled: true, voiceEnabled: true };
-  }
-  if (cmd === "/voice test") {
-    const info = tts.getPresetInfo();
-    console.log(`🎤 [${info.preset}] ${info.name}`);
-    try {
-      console.log("   재생 중...\n");
-      await tts.speak("안녕하세요. 지니입니다.");
-    } catch (e) {
-      console.error("음성 재생 실패:", e.message);
-    }
-    return { handled: true };
-  }
-  if (cmd === "/voice list") {
-    const presets = tts.listPresets();
-    const info = tts.getPresetInfo();
-    console.log(`\n📋 목소리 (언어: ${info.lang})\n`);
-    presets.forEach((p) => {
-      const marker = p.key === info.preset ? " 👈" : "";
-      console.log(`   ${p.key.padEnd(8)} ${p.name}${marker}`);
-    });
-    console.log("");
-    return { handled: true };
-  }
-  if (cmd === "/voice male" || cmd === "/voice female") {
-    const preset = cmd.split(/\s+/)[1].toLowerCase();
-    try {
-      const info = tts.setPreset(preset);
-      console.log(`🎤 변경: [${info.preset}] ${info.name}\n`);
-    } catch (e) {
-      console.error("변경 실패:", e.message);
-    }
-    return { handled: true };
-  }
-  return { handled: false };
-}
-
-async function getLLMAddOn(localAnswer, input, context, voiceEnabled) {
-  const sys = `너는 "지니"다. 사용자에게 이미 아래 로컬 답변이 전달되었다.
-절대 같은 내용을 반복하지 말고, 새로운 관점·계산·추천만 2문장으로 이어가라.
-숫자를 다시 언급하지 마라. 한국어만. 짧게.
-
-[이미 전달된 답변]
-${localAnswer}`;
-
-  try {
-    let buffer = "";
-    let ttsChain = Promise.resolve();
-
-    const enqueueSentence = (sentence) => {
-      const clean = cleanForTTS(sentence);
-      if (!clean) return;
-      if (voiceEnabled) {
-        ttsChain = ttsChain.then(() => tts.speak(clean).catch(() => {}));
-      }
-    };
-
-    const onChunk = (chunk) => {
-      buffer += chunk;
-      process.stdout.write(chunk);
-      const match = buffer.match(/^(.*?[.!?])\s+(.*)$/s);
-      if (match) {
-        enqueueSentence(match[1]);
-        buffer = match[2];
-      }
-    };
-
-    await chatStream(
-      [
-        { role: "system", content: sys },
-        { role: "user", content: `[팩트]\n${context}\n\n[질문]\n${input}` },
-      ],
-      onChunk,
-      { _silent: true },
-    );
-
-    if (buffer.trim()) enqueueSentence(buffer);
-    await ttsChain;
-    return true;
-  } catch {
-    return null;
-  }
-}
-
 async function main() {
   const config = loadConfig();
 
   console.log("");
   console.log("========================================");
-  console.log("  Pointip-Free  |  AI 파트너 지니");
+  console.log("  Scoutf-Geshin  |  AI 파트너 지니");
   console.log("========================================");
   console.log("");
 
   const active = [];
-  if (config.groq?.apiKey) active.push("FastAPI");
+  if (config.groq?.apiKey) active.push("Groq");
   if (config.openrouter?.apiKey) active.push("OpenRouter");
-  if (config.ollama) active.push("Ollama");
   console.log(`모드: 자동 (${active.join(" → ")})`);
   console.log("");
 
@@ -218,14 +125,10 @@ async function main() {
   console.log("      명령어:");
   console.log("        /mission          랜덤 미션 3개");
   console.log("        /mission list     카테고리 목록");
-  console.log("        /voice on|off     음성 ON/OFF");
-  console.log("        /voice test       목소리 테스트");
-  console.log("        /voice male|female");
   console.log("      (종료: Ctrl+C)");
   console.log("");
 
   const history = [];
-  let voiceEnabled = false;
 
   process.on("SIGINT", () => {
     console.log("\n\n지니: 안녕히 가세요, 여행자님.");
@@ -239,13 +142,6 @@ async function main() {
       const missionCmd = handleMissionCommand(input);
       if (missionCmd.handled) return ask();
 
-      const voiceCmd = await handleVoiceCommand(input);
-      if (voiceCmd.handled) {
-        if (typeof voiceCmd.voiceEnabled === "boolean")
-          voiceEnabled = voiceCmd.voiceEnabled;
-        return ask();
-      }
-
       const start = Date.now();
 
       const local = localBrain.tryLocal(UID, input);
@@ -254,15 +150,16 @@ async function main() {
 
         const skipLLM = SKIP_LLM_TYPES.includes(local.type);
 
-        const ttsPromise = voiceEnabled
-          ? tts.speak(local.answer).catch(() => {})
-          : Promise.resolve();
-
         const llmPromise = skipLLM
           ? Promise.resolve()
-          : getLLMAddOn(local.answer, input, context, voiceEnabled);
+          : getLLMAddOn(local.answer, input, context, SYSTEM_PROMPT)
+              .then((r) => {
+                if (!r) console.warn("   ⚠️ LLM 부연 실패 (반환값 없음)");
+              })
+              .catch((e) => {
+                console.warn("   ⚠️ LLM 부연 에러:", e.message);
+              });
 
-        await ttsPromise;
         await llmPromise;
         process.stdout.write("\n");
 
@@ -310,14 +207,6 @@ async function main() {
         }
 
         const cleanReply = cleanForTTS(reply);
-
-        if (voiceEnabled) {
-          try {
-            await tts.speak(cleanReply);
-          } catch (e) {
-            console.warn("음성 출력 실패:", e.message);
-          }
-        }
 
         const elapsed = ((Date.now() - start) / 1000).toFixed(1);
         const firstToken = firstChunkAt

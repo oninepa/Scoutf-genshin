@@ -24,12 +24,41 @@ const LOADING_AFTER_LOCAL = [
   "지니가 잊고 있던 걸 떠올리는 중...",
   "지니가 폰타인의 물소리를 듣는 중...",
   "지니가 티바트 지도를 펼치는 중...",
+  "지니가 리월 항구에서 배를 기다리는 중...",
+  "지니가 수메르 숲에서 버섯 채집 중...",
+  "지니가 나타의 모래바람을 피하는 중...",
+  "지니가 뇌물을 받고 잠깐 딴생각 중...",
+  "지니가 원석을 세봤는데 하나가 부족한 중...",
+  "지니가 성유물 옵션을 보고 한숨 쉬는 중...",
+  "지니가 치치를 뽑고 우는 중...",
+  "지니가 5성이 나왔는데 각청인 걸 확인 중...",
+  "지니가 파티 조합 고민하다 잠깐 멍 때리는 중...",
+  "지니가 나선비경 12층에서 좌절하는 중...",
+  "지니가 향릉을 또 데려갈지 고민 중...",
+  "지니가 벤티의 술 냄새를 참는 중...",
+  "지니가 종려님께 조언을 구하는 중...",
+  "지니가 라이덴의 번개를 피하는 중...",
+  "지니가 나히다의 설명을 필기 중...",
+  "지니가 푸리나의 연기를 관람 중...",
+  "지니가 무알라니의 지혜를 빌리는 중...",
+  "지니가 페이몬에게 밥을 사주는 중...",
+  "지니가 여행자님 지갑을 걱정하는 중...",
+  "지니가 오늘의 숙제를 몰래 미루는 중...",
+  "지니가 가챠 확률표를 다시 읽는 중...",
+  "지니가 어제 먹은 떡볶이를 생각하는 중...",
+  "지니가 잠깐 폰 보고 오는 중...",
+  "지니가 답변 초안을 세 번 갈아엎는 중...",
+  "지니가 마지막 문장을 다듬는 중...",
 ];
 
 const LOADING_NO_LOCAL = [
   "지니가 생각 중...",
   "지니가 처음 보는 질문에 고민 중...",
   "지니가 자료를 모으는 중...",
+  "지니가 위키를 뒤지는 중...",
+  "지니가 계산기 두드리는 중...",
+  "지니가 잠시 딴생각하다 돌아오는 중...",
+  "지니가 답을 찾아 떠나는 중...",
 ];
 
 function pickRandom(arr: string[]) {
@@ -206,7 +235,7 @@ async function setupOverlayControls() {
   } catch {}
 
   // === 투명도 순환 ===
-  const opacityLevels = [1.0, 0.85, 0.7, 0.5];
+  const opacityLevels = [0.95, 0.75, 0.55, 0.35];
   let opacityIdx = 0;
   const savedOpacity = localStorage.getItem("play_opacity");
   if (savedOpacity) {
@@ -214,14 +243,14 @@ async function setupOverlayControls() {
     const idx = opacityLevels.indexOf(v);
     if (idx >= 0) {
       opacityIdx = idx;
-      document.documentElement.style.opacity = String(v);
+      document.documentElement.style.setProperty("--play-bg-alpha", String(v));
     }
   }
 
   document.getElementById("opacity-btn")?.addEventListener("click", () => {
     opacityIdx = (opacityIdx + 1) % opacityLevels.length;
     const v = opacityLevels[opacityIdx];
-    document.documentElement.style.opacity = String(v);
+    document.documentElement.style.setProperty("--play-bg-alpha", String(v));
     localStorage.setItem("play_opacity", String(v));
   });
 
@@ -245,15 +274,16 @@ async function setupOverlayControls() {
     } catch {}
   });
 
-  // === 드래그 (상단 헤더 영역) ===
-  const header = document.querySelector(".play-top") as HTMLElement;
-  header?.addEventListener("mousedown", async (e) => {
+  // === 드래그 (상단 드래그 바) ===
+  const dragBar = document.getElementById("drag-bar");
+  dragBar?.addEventListener("mousedown", async (e) => {
     const target = e.target as HTMLElement;
-    if (target.tagName === "BUTTON") return;
-    if (target.closest("button")) return;
+    if (target.closest(".overlay-controls")) return;
     try {
       await appWindow.startDragging();
-    } catch {}
+    } catch (err) {
+      console.error("startDragging 실패:", err);
+    }
   });
 }
 

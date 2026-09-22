@@ -1,5 +1,5 @@
 // advisor/accounts.js
-// Pointip-Free — 계정 관리 (최대 5개 UID)
+// Pointip-Free — 계정 관리 (최대 2개 UID)
 
 const fs = require("fs");
 const path = require("path");

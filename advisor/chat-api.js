@@ -98,7 +98,7 @@ function buildSystemPrompt(prof) {
 3. 퍼센트 → "퍼센트", 슬래시 → "또는", 화살표 → "에서".
 4. 스탯은 한국어로: HP→체력, ATK→공격력, crit rate→치명타 확률.
 5. 숫자는 그대로. 1000 이상은 한글로.
-6. 한국어만.
+6. 한국어만. 영어·중국어·일본어 절대 금지.
 
 ## 사실 규칙
 1. 팩트만 사실로 사용. 추측 금지.
@@ -239,6 +239,31 @@ async function getLLMAddOn(localAnswer, input, context, systemPrompt) {
   const answerStyle = prof.ai?.answerStyle || "normal";
   const lengthHint = STYLE_LENGTH[answerStyle] || STYLE_LENGTH.normal;
 
+  const missions = require("./missions");
+  let picked = null;
+  try {
+    picked = missions.pickForLLM();
+  } catch (e) {
+    console.warn("   [mission pick 실패]", e.message);
+  }
+
+  const missionSection = picked
+    ? `
+
+## 마지막 제안 (절대 규칙)
+답변 맨 끝에 아래 미션을 "혹시 이런 거 어때요?" 톤으로 자연스럽게 1문장 제안해라.
+
+절대 금지:
+- "카테고리:" "미션:" 같은 라벨 출력 금지
+- 미션 문구를 그대로 복붙 금지
+- 미션을 두 개 이상 제안 금지
+
+반드시 미션을 게임 상황에 맞게 변형해서 말해라.
+
+[내부 참고용 미션]
+${picked.mission}`
+    : "";
+
   const sys = `${systemPrompt}
 
 ## 이번 답변 특별 지시 (매우 중요)
@@ -247,21 +272,15 @@ async function getLLMAddOn(localAnswer, input, context, systemPrompt) {
 1. 절대 같은 내용을 반복하지 마라.
 2. 숫자를 다시 언급하지 마라.
 3. 팩트에 없는 장비·캐릭터·활동 이름을 지어내지 마라.
-   특히 다음을 금지:
-   - 팩트에 없는 "파견" "비경 이름" "캐릭터 이름"
-   - 이미 완료된 활동을 하라고 제안 (예: 파견 5/5인데 "파견 보내라")
-4. 팩트 상태를 정확히 반영:
-   - 파견 5/5 완료 → 파견 관련 조언 금지
-   - 일일 4/4 완료 → 일일 관련 조언 금지
+4. 팩트 상태를 정확히 반영.
 5. 답변 스타일: ${lengthHint}
-6. 새로운 관점·계산·추천만 이어가라.
-7. 확신 없으면 "제가 알기로는..." 같은 표현 사용.
+6. 새로운 관점·계산·추천만 이어가라.${missionSection}
 
 [이미 전달된 답변]
 ${localAnswer}`;
 
+  let addOn = "";
   try {
-    let addOn = "";
     await chatStream(
       [
         { role: "system", content: sys },
@@ -269,10 +288,12 @@ ${localAnswer}`;
       ],
       (chunk) => {
         addOn += chunk;
+        process.stdout.write(chunk);
       },
     );
-    return addOn.trim();
-  } catch {
+    return addOn.trim() || "(빈 응답)";
+  } catch (e) {
+    console.warn("   [chatStream 실패]", e.message);
     return null;
   }
 }
@@ -285,6 +306,7 @@ function getSuggestions(accountIndex = 1) {
   const prof = profile.load(accountIndex);
   const suggestions = [];
 
+  // === 상태 기반 ===
   if (facts) {
     if (facts.resin?.isFull) {
       suggestions.push("레진 어디에 쓸까?");
@@ -301,15 +323,41 @@ function getSuggestions(accountIndex = 1) {
     }
 
     if (facts.top3 && facts.top3.length > 0) {
-      suggestions.push("파티 추천해줘");
+      suggestions.push("내 캐릭터 티어 알려줘");
+    }
+
+    if (facts.characters && facts.characters.length > 0) {
+      suggestions.push("내 캐릭터 상태 요약해줘");
+    }
+
+    if (facts.weapons && facts.weapons.length > 0) {
+      suggestions.push("무기 추천해줘");
     }
   }
 
+  // === 스타일 기반 ===
   const styles = prof.user?.styles || [];
   if (styles.includes("abyss")) suggestions.push("나선비경 조언");
   if (styles.includes("story")) suggestions.push("스토리 진행 팁");
   if (styles.includes("collection")) suggestions.push("뽑기 추천");
   if (styles.includes("theater")) suggestions.push("환상극 팁");
+  if (styles.includes("realm")) suggestions.push("선계 배치 팁");
+  if (styles.includes("resource")) suggestions.push("자원 파밍 추천");
+
+  // === 수준 기반 ===
+  const level = prof.user?.level || "intermediate";
+  if (level === "beginner") {
+    suggestions.push("초보자가 먼저 할 일은?");
+  } else if (level === "advanced") {
+    suggestions.push("최적화 팁 알려줘");
+  } else {
+    suggestions.push("효율 좋은 파밍 루트는?");
+  }
+
+  // === 잡학/유머 ===
+  suggestions.push("오늘의 운세 알려줘");
+  suggestions.push("가장 센 캐릭터는?");
+  suggestions.push("오늘 뭐 먹을까?");
 
   // 중복 제거
   const unique = [...new Set(suggestions)];
@@ -317,25 +365,33 @@ function getSuggestions(accountIndex = 1) {
   // 이미 물어본 것 제외
   let fresh = unique.filter((s) => !askedQuestions.has(s));
 
-  // 3개 미만이면 기록 리셋
-  if (fresh.length < 3) {
+  // 6개 미만이면 기록 리셋
+  if (fresh.length < 6) {
     askedQuestions.clear();
     fresh = unique;
   }
 
   // 기본값 보강
-  const defaults = ["다이루크 상태는?", "파티 추천해줘", "레진 남았어?"];
+  const defaults = [
+    "다이루크 상태는?",
+    "파티 추천해줘",
+    "레진 남았어?",
+    "오늘 일일 뭐 남았어?",
+    "뽑기 추천",
+    "오늘의 운세 알려줘",
+  ];
   for (const d of defaults) {
-    if (fresh.length >= 3) break;
+    if (fresh.length >= 6) break;
     if (!fresh.includes(d)) fresh.push(d);
   }
 
-  return fresh.slice(0, 3);
+  return fresh.slice(0, 6);
 }
 
 module.exports = {
   chatLocal,
   chatLLM,
+  getLLMAddOn,
   getSuggestions,
   refreshContext,
   buildSystemPrompt,

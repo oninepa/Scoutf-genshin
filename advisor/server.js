@@ -228,19 +228,6 @@ async function handle(req, res) {
       tasks: gen.tasks,
     });
   }
-  // ---- GET /dashboard (브리핑 + 할 일 통합) ----
-  if (method === "GET" && path === "/dashboard") {
-    const prof = profile.load();
-    const gen = taskEngine.generate(prof);
-    if (!gen.ok) return json(res, gen);
-    return json(res, {
-      ok: true,
-      parse: parseManager.getStatus(),
-      profile: prof,
-      briefing: gen.briefing,
-      tasks: gen.tasks,
-    });
-  }
 
   // ---- GET /profile ----
   if (method === "GET" && path === "/profile") {
@@ -312,4 +299,18 @@ server.listen(PORT, "127.0.0.1", () => {
   console.log(`  GET  /chat/suggestions  질문 제안`);
   console.log(`  POST /chat/local  로컬 즉답`);
   console.log(`  POST /chat/llm    LLM 부연`);
+
+  setInterval(
+    async () => {
+      const accounts = require("./accounts");
+      const list = accounts.loadAll();
+      for (const acc of list) {
+        if (acc.uid) {
+          const r = await parseManager.parseAuto(acc.index);
+          if (r.ok) console.log(`[auto] 계정 ${acc.index} 파싱 완료`);
+        }
+      }
+    },
+    30 * 60 * 1000,
+  ); // 30분마다 체크
 });

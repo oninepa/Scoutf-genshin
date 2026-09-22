@@ -110,41 +110,43 @@ async function runParse(type = "manual", accountIndex = 1) {
     };
   }
 
-  // data-pipeline/output에 hoyolab 파일이 있는지 확인
-  const hoyolabSrc = path.join(HOYOLAB_SRC, `hoyolab_${acc.uid}.json`);
+  // 계정 정보 로드
+  const accounts = require("./accounts");
+  const acc = accounts.loadAccount(accountIndex || 1);
+  const cookieStr = accounts.loadCookie(accountIndex || 1);
 
+  if (!acc.uid) {
+    return {
+      ok: false,
+      reason: "no_uid",
+      message: `계정 ${accountIndex || 1}의 UID가 없습니다.`,
+    };
+  }
+
+  if (!cookieStr) {
+    return {
+      ok: false,
+      reason: "no_cookie",
+      message: `계정 ${accountIndex || 1}의 쿠키가 없습니다.`,
+    };
+  }
+
+  // 쿠키 파싱
+  let ltuid = "";
+  let ltoken = "";
+  ltuid = cookieStr.match(/ltuid_v2=([^;]+)/)?.[1] || "";
+  ltoken = cookieStr.match(/ltoken_v2=([^;]+)/)?.[1] || "";
+
+  if (!ltuid || !ltoken) {
+    return {
+      ok: false,
+      reason: "no_cookie",
+      message: `계정 ${accountIndex || 1}의 쿠키 형식이 잘못되었습니다.`,
+    };
+  }
+
+  // Python 호출
   try {
-    // Python 스크립트 실행
-    // 계정 정보 로드
-    const accounts = require("./accounts");
-    const acc = accounts.loadAccount(accountIndex || 1);
-    const cookieStr = accounts.loadCookie(accountIndex || 1);
-
-    if (!acc.uid) {
-      return {
-        ok: false,
-        reason: "no_uid",
-        message: `계정 ${accountIndex || 1}의 UID가 없습니다.`,
-      };
-    }
-
-    // 쿠키 파싱
-    let ltuid = "";
-    let ltoken = "";
-    if (cookieStr) {
-      ltuid = cookieStr.match(/ltuid_v2=([^;]+)/)?.[1] || "";
-      ltoken = cookieStr.match(/ltoken_v2=([^;]+)/)?.[1] || "";
-    }
-
-    if (!ltuid || !ltoken) {
-      return {
-        ok: false,
-        reason: "no_cookie",
-        message: `계정 ${accountIndex || 1}의 쿠키가 없습니다.`,
-      };
-    }
-
-    // Python 호출 (인자 전달)
     await execFileAsync(
       "python",
       ["fetch-hoyolab.py", ltuid, ltoken, acc.uid],
@@ -163,6 +165,9 @@ async function runParse(type = "manual", accountIndex = 1) {
   }
 
   // 결과 파일을 캐시로 복사
+  const hoyolabSrc = path.join(HOYOLAB_SRC, `hoyolab_${acc.uid}.json`);
+  const rosterSrc = path.join(HOYOLAB_SRC, `roster_${acc.uid}.json`);
+
   try {
     fs.mkdirSync(CACHE_DIR, { recursive: true });
     const accountCacheDir = path.join(CACHE_DIR, `account_${accountIndex}`);
@@ -171,12 +176,10 @@ async function runParse(type = "manual", accountIndex = 1) {
     if (fs.existsSync(hoyolabSrc)) {
       fs.copyFileSync(hoyolabSrc, path.join(accountCacheDir, "hoyolab.json"));
     }
-    const rosterSrc = path.join(HOYOLAB_SRC, `roster_${acc.uid}.json`);
     if (fs.existsSync(rosterSrc)) {
       fs.copyFileSync(rosterSrc, path.join(accountCacheDir, "roster.json"));
     }
 
-    // 계정 1은 기존 캐시에도 복사 (호환)
     if (accountIndex === 1) {
       if (fs.existsSync(hoyolabSrc)) fs.copyFileSync(hoyolabSrc, HOYOLAB_DST);
       if (fs.existsSync(rosterSrc)) fs.copyFileSync(rosterSrc, ROSTER_DST);
@@ -187,6 +190,20 @@ async function runParse(type = "manual", accountIndex = 1) {
       reason: "copy_fail",
       message: `결과 복사 실패: ${e.message}`,
     };
+  }
+
+  // 결과 확인 (빈 파일 검사)
+  if (fs.existsSync(hoyolabSrc)) {
+    try {
+      const parsed = JSON.parse(fs.readFileSync(hoyolabSrc, "utf-8"));
+      if (!parsed.notes) {
+        return {
+          ok: false,
+          reason: "no_notes",
+          message: `파싱은 됐지만 notes 데이터가 없습니다. 쿠키가 만료됐을 수 있습니다.`,
+        };
+      }
+    } catch {}
   }
 
   // 로그 갱신

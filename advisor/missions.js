@@ -1,5 +1,5 @@
 // advisor/missions.js
-// Navi-genshin — 미션 아이디어 뱅크
+// Pointip-Free — 미션 아이디어 뱅크
 // missions.json 로드 + 랜덤 선택
 
 const fs = require("fs");
@@ -67,9 +67,44 @@ function randomMissions(n = 3) {
   }
   if (all.length === 0) return [];
 
-  // 셔플
   const shuffled = all.slice().sort(() => Math.random() - 0.5);
   return shuffled.slice(0, n);
+}
+
+// 카테고리 1개에서 랜덤 미션 1개 (중복 카테고리 회피용)
+function randomMissionFromCategory(categoryKey) {
+  return randomMission(categoryKey);
+}
+
+// LLM 부연용: 매번 다른 카테고리에서 하나 뽑기
+// 최근 뽑힌 카테고리는 피해서 다양성 확보
+const recentCategories = [];
+const MAX_RECENT = 5;
+
+function pickForLLM() {
+  const data = loadMissions();
+  const cats = data.categories || {};
+  const keys = Object.keys(cats).filter((k) => !recentCategories.includes(k));
+  if (keys.length === 0) {
+    recentCategories.length = 0;
+    return pickForLLM();
+  }
+
+  const catKey = keys[Math.floor(Math.random() * keys.length)];
+  const cat = cats[catKey];
+  const list = cat.missions || [];
+  if (list.length === 0) return null;
+
+  const mission = list[Math.floor(Math.random() * list.length)];
+
+  recentCategories.push(catKey);
+  if (recentCategories.length > MAX_RECENT) recentCategories.shift();
+
+  return {
+    category: catKey,
+    categoryName: cat.name,
+    mission,
+  };
 }
 
 // 텍스트 포맷 (시스템 프롬프트 주입용)
@@ -85,5 +120,7 @@ module.exports = {
   listCategories,
   randomMission,
   randomMissions,
+  randomMissionFromCategory,
+  pickForLLM,
   formatMissionsForPrompt,
 };

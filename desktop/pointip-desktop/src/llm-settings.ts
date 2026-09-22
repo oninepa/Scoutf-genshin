@@ -60,7 +60,7 @@ async function save() {
   if (groqKey) {
     body.groq = {
       apiKey: groqKey,
-      model: "openai/gpt-oss-20b",
+      model: "groq/compound-mini",
       baseUrl: "https://api.groq.com/openai/v1",
     };
   } else {
