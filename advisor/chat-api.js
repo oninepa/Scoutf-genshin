@@ -1,19 +1,20 @@
 // advisor/chat-api.js
-// Pointip-Free — 챗봇 API (프로필 반영)
+// Pointip-Free — 챗봇 API (템플릿 엔진 기반)
 
+const path = require("path");
 const decrypt = require("./decrypt");
 const localBrain = decrypt.loadLocalBrain();
-const { chat, chatStream, loadConfig } = require("./llm-wrapper");
 const { buildContext } = require("./context");
 const profile = require("./profile");
+const engine = require("../engine/template-engine");
+const analyzer = require("./assets/games/genshin/analyzer");
 const askedQuestions = new Set();
 
 const UID = "784667533";
-
 const SKIP_LLM_TYPES = ["greeting", "thanks", "meta"];
 
 // ============================================================
-// 답변 스타일 → 문장 수
+// 답변 스타일
 // ============================================================
 const STYLE_LENGTH = {
   detail: "6~8문장. 자세히 설명",
@@ -21,9 +22,6 @@ const STYLE_LENGTH = {
   simple: "1~2문장. 핵심만",
 };
 
-// ============================================================
-// 관심 스타일 → 한국어
-// ============================================================
 const STYLE_LABEL = {
   story: "스토리/세계관",
   collection: "캐릭터 수집",
@@ -49,10 +47,28 @@ const SPENDING_LABEL = {
 };
 
 // ============================================================
-// 시스템 프롬프트 (프로필 반영)
+// 템플릿 캐시
+// ============================================================
+let templatesCache = null;
+
+function getTemplates() {
+  if (!templatesCache) {
+    const p = path.join(
+      __dirname,
+      "assets",
+      "games",
+      "genshin",
+      "templates.json",
+    );
+    templatesCache = engine.loadTemplates(p);
+  }
+  return templatesCache;
+}
+
+// ============================================================
+// 시스템 프롬프트 (LLM 폴백용, 지금은 미사용)
 // ============================================================
 function buildSystemPrompt(prof) {
-  const decrypt = require("./decrypt");
   const template = decrypt.getSystemPrompt();
 
   const u = prof.user || {};
@@ -66,10 +82,8 @@ function buildSystemPrompt(prof) {
     .join(", ");
   const answerStyle = a.answerStyle || "normal";
   const lengthHint = STYLE_LENGTH[answerStyle] || STYLE_LENGTH.normal;
-
   const stylesText = styles.length > 0 ? styles.join(", ") : "(아직 미설정)";
 
-  // 템플릿 변수 치환
   return template
     .replace(/\$\{level\}/g, level)
     .replace(/\$\{playMode \|\| "\(미설정\)"\}/g, playMode || "(미설정)")
@@ -99,18 +113,7 @@ function refreshContext() {
 }
 
 // ============================================================
-// 대화 히스토리
-// ============================================================
-const history = [];
-
-// ============================================================
-// 메인 chat
-// ============================================================
-// ============================================================
-// 1단계: 로컬 즉답만 리턴
-// ============================================================
-// ============================================================
-// 1단계: 로컬 즉답만 리턴
+// 1단계: 로컬 브레인 즉답
 // ============================================================
 async function chatLocal(input) {
   if (!input || !input.trim()) {
@@ -140,14 +143,14 @@ async function chatLocal(input) {
 }
 
 // ============================================================
-// 2단계: LLM 부연 (또는 전담)
+// 2단계: 템플릿 엔진 (LLM 대체)
 // ============================================================
 async function chatLLM(input, localAnswer, accountIndex = 1) {
   if (!input || !input.trim()) {
     return { ok: false, message: "빈 질문입니다." };
   }
 
-  // 로컬 답변 있으면 스킵 타입 체크
+  // 스킵 타입 체크
   if (localAnswer) {
     const local = localBrain.tryLocal(UID, input);
     if (local && SKIP_LLM_TYPES.includes(local.type)) {
@@ -155,113 +158,38 @@ async function chatLLM(input, localAnswer, accountIndex = 1) {
     }
   }
 
-  const context = getContext();
-  const prof = profile.load(accountIndex);
-  const systemPrompt = buildSystemPrompt(prof);
+  // 로컬 브레인이 이미 답했으면 스킵 (중복 방지)
+  if (localAnswer && localAnswer.trim()) {
+    return { ok: true, llm: "" };
+  }
 
   try {
-    if (localAnswer) {
-      // 로컬 답변에 대한 부연
-      const addOn = await getLLMAddOn(
-        localAnswer,
-        input,
-        context,
-        systemPrompt,
-      );
-      return { ok: true, llm: addOn || "" };
-    } else {
-      // LLM 전담
-      let reply = "";
-      const onChunk = (chunk) => {
-        reply += chunk;
-      };
-
-      await chatStream(
-        [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: `[팩트]\n${context}` },
-          { role: "assistant", content: "네, 확인했습니다." },
-          ...history,
-          { role: "user", content: input },
-        ],
-        onChunk,
-      );
-
-      history.push({ role: "user", content: input });
-      history.push({ role: "assistant", content: reply });
-      if (history.length > 10) history.splice(0, 2);
-
-      return { ok: true, llm: reply };
+    // facts 가져오기
+    const facts = localBrain.getFacts ? localBrain.getFacts(UID) : null;
+    if (!facts) {
+      return { ok: true, llm: "" };
     }
+
+    // analyzer로 context 생성
+    const context = analyzer.analyze(facts, facts.roster || [], {
+      teapot: facts.teapot,
+      explorations: facts.explorations,
+      stats: facts.stats,
+    });
+
+    // 템플릿 매칭
+    const templates = getTemplates();
+    const result = engine.pickTemplate(templates.templates, input, context);
+
+    if (result) {
+      return { ok: true, llm: result.text, templateId: result.id };
+    }
+
+    // 매칭 실패 → 빈 응답
+    return { ok: true, llm: "" };
   } catch (e) {
+    console.warn("[chatLLM] 에러:", e.message);
     return { ok: false, message: e.message };
-  }
-}
-
-// ============================================================
-// LLM 추가 관점
-// ============================================================
-async function getLLMAddOn(localAnswer, input, context, systemPrompt) {
-  const prof = profile.load();
-  const answerStyle = prof.ai?.answerStyle || "normal";
-  const lengthHint = STYLE_LENGTH[answerStyle] || STYLE_LENGTH.normal;
-
-  const missions = require("./missions");
-  let picked = null;
-  try {
-    picked = missions.pickForLLM();
-  } catch (e) {
-    console.warn("   [mission pick 실패]", e.message);
-  }
-
-  const missionSection = picked
-    ? `
-
-## 마지막 제안 (절대 규칙)
-답변 맨 끝에 아래 미션을 "혹시 이런 거 어때요?" 톤으로 자연스럽게 1문장 제안해라.
-
-절대 금지:
-- "카테고리:" "미션:" 같은 라벨 출력 금지
-- 미션 문구를 그대로 복붙 금지
-- 미션을 두 개 이상 제안 금지
-
-반드시 미션을 게임 상황에 맞게 변형해서 말해라.
-
-[내부 참고용 미션]
-${picked.mission}`
-    : "";
-
-  const sys = `${systemPrompt}
-
-## 이번 답변 특별 지시 (매우 중요)
-사용자에게 이미 아래 로컬 답변이 전달되었다.
-
-1. 절대 같은 내용을 반복하지 마라.
-2. 숫자를 다시 언급하지 마라.
-3. 팩트에 없는 장비·캐릭터·활동 이름을 지어내지 마라.
-4. 팩트 상태를 정확히 반영.
-5. 답변 스타일: ${lengthHint}
-6. 새로운 관점·계산·추천만 이어가라.${missionSection}
-
-[이미 전달된 답변]
-${localAnswer}`;
-
-  let addOn = "";
-  try {
-    await chatStream(
-      [
-        { role: "system", content: sys },
-        { role: "user", content: `[팩트]\n${context}\n\n[질문]\n${input}` },
-      ],
-      (chunk) => {
-        addOn += chunk;
-        process.stdout.write(chunk);
-      },
-    );
-    return addOn.trim() || "(빈 응답)";
-  } catch (e) {
-    console.warn("   [chatStream 실패]", e.message);
-    return null;
   }
 }
 
@@ -273,7 +201,6 @@ function getSuggestions(accountIndex = 1) {
   const prof = profile.load(accountIndex);
   const suggestions = [];
 
-  // === 상태 기반 ===
   if (facts) {
     if (facts.resin?.isFull) {
       suggestions.push("레진 어디에 쓸까?");
@@ -289,20 +216,12 @@ function getSuggestions(accountIndex = 1) {
       suggestions.push("오늘 뭐 하면 좋을까?");
     }
 
-    if (facts.top3 && facts.top3.length > 0) {
+    if (facts.roster && facts.roster.length > 0) {
       suggestions.push("내 캐릭터 티어 알려줘");
-    }
-
-    if (facts.characters && facts.characters.length > 0) {
-      suggestions.push("내 캐릭터 상태 요약해줘");
-    }
-
-    if (facts.weapons && facts.weapons.length > 0) {
-      suggestions.push("무기 추천해줘");
+      suggestions.push("성유물 파밍해야 해?");
     }
   }
 
-  // === 스타일 기반 ===
   const styles = prof.user?.styles || [];
   if (styles.includes("abyss")) suggestions.push("나선비경 조언");
   if (styles.includes("story")) suggestions.push("스토리 진행 팁");
@@ -311,7 +230,6 @@ function getSuggestions(accountIndex = 1) {
   if (styles.includes("realm")) suggestions.push("선계 배치 팁");
   if (styles.includes("resource")) suggestions.push("자원 파밍 추천");
 
-  // === 수준 기반 ===
   const level = prof.user?.level || "intermediate";
   if (level === "beginner") {
     suggestions.push("초보자가 먼저 할 일은?");
@@ -321,24 +239,19 @@ function getSuggestions(accountIndex = 1) {
     suggestions.push("효율 좋은 파밍 루트는?");
   }
 
-  // === 잡학/유머 ===
-  suggestions.push("오늘의 운세 알려줘");
   suggestions.push("가장 센 캐릭터는?");
   suggestions.push("오늘 뭐 먹을까?");
 
-  // 중복 제거
   const unique = [...new Set(suggestions)];
-
-  // 이미 물어본 것 제외
   let fresh = unique.filter((s) => !askedQuestions.has(s));
 
-  // 6개 미만이면 기록 리셋
-  if (fresh.length < 6) {
+  // 모두 물어봤으면 리셋
+  if (fresh.length === 0) {
     askedQuestions.clear();
     fresh = unique;
   }
 
-  // 기본값 보강
+  // 부족하면 새 질문으로 채우기 (이미 물어본 것 제외)
   const defaults = [
     "다이루크 상태는?",
     "파티 추천해줘",
@@ -346,7 +259,19 @@ function getSuggestions(accountIndex = 1) {
     "오늘 일일 뭐 남았어?",
     "뽑기 추천",
     "오늘의 운세 알려줘",
+    "내 캐릭터 티어 알려줘",
+    "성유물 파밍해야 해?",
+    "가장 센 캐릭터는?",
+    "선계 상태 어때?",
   ];
+  for (const d of defaults) {
+    if (fresh.length >= 6) break;
+    if (!fresh.includes(d) && !askedQuestions.has(d)) {
+      fresh.push(d);
+    }
+  }
+
+  // 그래도 부족하면 그냥 채움
   for (const d of defaults) {
     if (fresh.length >= 6) break;
     if (!fresh.includes(d)) fresh.push(d);
@@ -358,7 +283,6 @@ function getSuggestions(accountIndex = 1) {
 module.exports = {
   chatLocal,
   chatLLM,
-  getLLMAddOn,
   getSuggestions,
   refreshContext,
   buildSystemPrompt,

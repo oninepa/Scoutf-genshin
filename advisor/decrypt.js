@@ -122,11 +122,34 @@ function getSystemPrompt() {
   cache.systemPrompt = decrypt(encrypted);
   return cache.systemPrompt;
 }
+// names-ko 한국어 매핑
+function getNamesKo() {
+  if (cache.namesKo) return cache.namesKo;
+  const files = getLocalBrainFiles();
+  const code = files["names-ko.js"];
+  if (!code) throw new Error("names-ko.js 없음");
+
+  const module = { exports: {} };
+  const vm = require("vm");
+  const context = {
+    module,
+    exports: module.exports,
+    require,
+    console,
+    __dirname: path.join(__dirname, "assets", "local-brain"),
+    __filename: path.join(__dirname, "assets", "local-brain", "names-ko.js"),
+  };
+  vm.createContext(context);
+  vm.runInContext(code, context, { filename: "names-ko.js" });
+  cache.namesKo = module.exports;
+  return cache.namesKo;
+}
 
 module.exports = {
   getMissions,
   getLocalBrainFiles,
   getSystemPrompt,
   loadLocalBrain,
+  getNamesKo, // ← 추가
   decrypt,
 };

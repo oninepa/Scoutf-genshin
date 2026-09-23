@@ -1,0 +1,123 @@
+{
+  "version": "1.0",
+  "game": "genshin",
+  "templates": [
+    {
+      "id": "resin_full_weak_artifact",
+      "match": {
+        "keywords": ["레진", "쓸까", "쓸까?"],
+        "condition": "resin.isFull && weakestCharacter"
+      },
+      "priority": 10,
+      "text": "레진이 {resin.current}로 가득 찼어요. {weakestCharacter}의 성유물이 약하니 파밍을 먼저 추천해요. 주간 보스 할인 {resin.discountsLeft}회는 그 다음에 쓰세요."
+    },
+    {
+      "id": "resin_full_default",
+      "match": {
+        "keywords": ["레진"],
+        "condition": "resin.isFull"
+      },
+      "priority": 5,
+      "text": "레진이 {resin.current}로 가득 찼어요. 지금 성유물 파밍에 쓰기 딱 좋아요."
+    },
+    {
+      "id": "resin_low",
+      "match": {
+        "keywords": ["레진"],
+        "condition": "resin.current < 40"
+      },
+      "priority": 5,
+      "text": "레진 {resin.current}이 남았어요. 아직 여유 있습니다."
+    },
+    {
+      "id": "daily_incomplete",
+      "match": {
+        "keywords": ["일일", "의뢰"],
+        "condition": "!daily.isComplete"
+      },
+      "priority": 10,
+      "text": "일일 의뢰 {daily.done}개 완료, {daily.left}개 남았어요."
+    },
+    {
+      "id": "daily_complete",
+      "match": {
+        "keywords": ["일일", "의뢰"],
+        "condition": "daily.isComplete"
+      },
+      "priority": 10,
+      "text": "오늘 일일 의뢰 다 끝내셨어요. 훌륭합니다."
+    },
+    {
+      "id": "roster_count",
+      "match": {
+        "keywords": ["내 캐릭터", "캐릭터 뭐"]
+      },
+      "priority": 5,
+      "text": "보유 캐릭터 {roster.count}명이에요. 5성은 {roster.fiveStars}입니다."
+    },
+    {
+      "id": "strongest_character",
+      "match": {
+        "keywords": ["가장 센", "최강", "제일 강한"]
+      },
+      "priority": 10,
+      "text": "가장 센 캐릭터는 {strongest.name}입니다. {strongest.reason}"
+    },
+    {
+      "id": "artifact_weak",
+      "match": {
+        "keywords": ["성유물", "파밍"]
+      },
+      "priority": 5,
+      "text": "{weakestCharacter}의 성유물이 약해요. 치확 {weakestStats.critRate}퍼센트로 매우 낮습니다. 파밍을 추천해요."
+    },
+    {
+      "id": "food_default",
+      "match": {
+        "keywords": ["먹을", "밥", "음식"]
+      },
+      "priority": 1,
+      "text": "오늘은 가볍게 국수나 비빔밥 어떠세요? 게임 중에 먹기 편하고 든든합니다."
+    },
+    {
+      "id": "fortune_default",
+      "match": {
+        "keywords": ["운세", "재수"]
+      },
+      "priority": 1,
+      "text": "오늘의 운세는 5성 뽑기 성공입니다. 원석 아껴두세요."
+    },
+    {
+      "id": "story_default",
+      "match": {
+        "keywords": ["스토리", "세계관"]
+      },
+      "priority": 1,
+      "text": "스토리는 메인 퀘스트부터 차근차근 진행하세요. 서브 퀘스트는 나중에 몰아서 해도 됩니다."
+    },
+    {
+      "id": "farm_default",
+      "match": {
+        "keywords": ["파밍 루트", "파밍루트", "어디서 파밍"]
+      },
+      "priority": 1,
+      "text": "파밍은 완성도 낮은 지역부터 순서대로 하세요. 레진은 성유물 파밍에 우선 쓰는 게 효율적입니다."
+    },
+    {
+      "id": "gacha_default",
+      "match": {
+        "keywords": ["뽑기", "가챠"]
+      },
+      "priority": 1,
+      "text": "뽑기는 픽업 캐릭터의 성능과 본인 파티 시너지를 보고 결정하세요. 무과금이면 90연차까지 모으는 게 안전합니다."
+    },
+    {
+      "id": "fallback_default",
+      "match": {
+        "keywords": []
+      },
+      "priority": 0,
+      "text": "여행자님, 그 질문은 아직 답변을 준비하지 못했어요. 레진, 일일, 캐릭터, 성유물, 파밍에 대해 물어봐 주세요."
+    }
+  ]
+}
