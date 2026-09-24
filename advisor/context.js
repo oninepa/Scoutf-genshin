@@ -203,43 +203,35 @@ function buildContext(uid) {
   return lines.join("\n");
 }
 
-// ============================================================
-// 성유물 스탯 계산
-// ============================================================
+// 성유물 스탯 계산 (한글/영어 둘 다 지원)
 function calcArtifactStats(artifacts) {
-  const stats = {
-    critRate: 0,
-    critDmg: 0,
-    atkPct: 0,
-    er: 0,
-    em: 0,
-  };
-
+  const stats = { critRate: 0, critDmg: 0, atkPct: 0, er: 0, em: 0 };
   if (!artifacts || artifacts.length === 0) return stats;
 
+  const isCritRate = (t) => t === "CRIT Rate" || t === "치명타 확률";
+  const isCritDmg = (t) => t === "CRIT DMG" || t === "치명타 피해";
+  const isAtkPct = (t) => t === "ATK%" || t === "공격력%";
+  const isER = (t) => t === "Energy Recharge" || t === "원소 충전 효율";
+  const isEM = (t) => t === "Elemental Mastery" || t === "원소 마스터리";
+
   artifacts.forEach((a) => {
-    // 주옵도 합산
     if (a.mainStat) {
       const t = a.mainStat.type;
       const v = parseFloat(a.mainStat.value) || 0;
-      if (t === "CRIT Rate") stats.critRate += v;
-      else if (t === "CRIT DMG") stats.critDmg += v;
-      else if (t === "ATK%" || t === "ATK") {
-        if (a.mainStat.isPercent) stats.atkPct += v;
-      } else if (t === "Energy Recharge") stats.er += v;
-      else if (t === "Elemental Mastery") stats.em += v;
+      if (isCritRate(t)) stats.critRate += v;
+      else if (isCritDmg(t)) stats.critDmg += v;
+      else if (isAtkPct(t) && a.mainStat.isPercent) stats.atkPct += v;
+      else if (isER(t)) stats.er += v;
+      else if (isEM(t)) stats.em += v;
     }
-
-    // 부옵 합산
     (a.substats || []).forEach((s) => {
       const t = s.type;
       const v = parseFloat(s.value) || 0;
-      if (t === "CRIT Rate") stats.critRate += v;
-      else if (t === "CRIT DMG") stats.critDmg += v;
-      else if (t === "ATK%" || t === "ATK") {
-        if (s.isPercent) stats.atkPct += v;
-      } else if (t === "Energy Recharge") stats.er += v;
-      else if (t === "Elemental Mastery") stats.em += v;
+      if (isCritRate(t)) stats.critRate += v;
+      else if (isCritDmg(t)) stats.critDmg += v;
+      else if (isAtkPct(t) && s.isPercent) stats.atkPct += v;
+      else if (isER(t)) stats.er += v;
+      else if (isEM(t)) stats.em += v;
     });
   });
 

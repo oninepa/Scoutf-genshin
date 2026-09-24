@@ -297,42 +297,57 @@ async function chatAI(input) {
       };
     }
 
-    // 요약 팩트 생성 (analyzer)
+    // analyzer로 context 생성
     const context = analyzer.analyze(facts, facts.roster || [], {
       teapot: facts.teapot,
       explorations: facts.explorations,
       stats: facts.stats,
     });
 
-    // LLM에게 보낼 요약 텍스트 (토큰 절약)
-    const summary = buildAISummary(context);
+    // ─── 1단계: 템플릿 시도 ───
+    const templates = getTemplates();
+    const template = engine.pickTemplate(templates.templates, input, context);
 
-    // LLM 호출
     const { chat } = require("./llm-wrapper");
+    const polisher = require("../engine/polisher");
+
+    // LLM 호출 함수 (chat 스타일)
+    const llmFn = async (prompt) => {
+      return await chat([{ role: "user", content: prompt }]);
+    };
+
+    if (template && template.id !== "fallback_default") {
+      // 템플릿 있음 → 다듬기 모드
+      const polished = await polisher.polish(template.text, input, llmFn);
+      return {
+        ok: true,
+        answer: polished,
+        mode: "polish",
+        templateId: template.id,
+      };
+    }
+
+    // ─── 2단계: 템플릿 없음 → LLM 새 답변 ───
+    const summary = buildAISummary(context);
     const sys = `너는 원신 게임 도우미 "지니"다.
 사용자 계정 데이터를 보고 정확한 조언을 해라.
 
-## 규칙
-1. 한국어만. 영어/중국어/일본어 금지.
-2. 마크다운 금지. 별표, 우물정, 백틱 쓰지 마라.
+## 절대 규칙
+1. 한국어만. 영어·중국어·일본어 금지.
+2. 마크다운 금지.
 3. 팩트에 없는 캐릭터/지역/아이템 지어내지 마라.
-4. 3~5문장으로 간결하게.
-5. 구체적인 숫자와 추천 포함.
-6. 사용자를 "여행자님"이라고 부른다.
-
-## 답변 구조
-1) 현황 요약 (1문장)
-2) 문제점/기회 (1~2문장)
-3) 구체적 추천 (1~2문장)`;
+4. 팩트에 "보유 캐릭터" 목록에 없는 이름 언급 금지.
+5. 3~5문장으로 간결하게.
+6. 확실하지 않으면 "제가 알기로는..." 표현.
+7. 사용자를 "여행자님"이라고 부른다.`;
 
     const userMsg = `[계정 요약]\n${summary}\n\n[질문]\n${input}`;
-
     const answer = await chat([
       { role: "system", content: sys },
       { role: "user", content: userMsg },
     ]);
 
-    return { ok: true, answer: answer.trim() };
+    return { ok: true, answer: answer.trim(), mode: "fresh" };
   } catch (e) {
     console.warn("[chatAI] 에러:", e.message);
     return { ok: false, message: `AI 답변 실패: ${e.message}` };

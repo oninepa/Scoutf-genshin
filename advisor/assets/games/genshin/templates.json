@@ -132,6 +132,259 @@
       },
       "priority": 0,
       "text": "여행자님, 그 질문은 아직 답변을 준비하지 못했어요. 레진, 일일, 캐릭터, 성유물, 파밍에 대해 물어봐 주세요."
+    },
+    {
+      "id": "fallback_default",
+      "match": {
+        "keywords": []
+      },
+      "priority": 0,
+      "text": "여행자님, 그 질문은 아직 답변을 준비하지 못했어요. 레진, 일일, 캐릭터, 성유물, 파밍에 대해 물어봐 주세요."
+    },
+    {
+      "id": "resin_full_good_artifact",
+      "match": {
+        "keywords": ["레진"],
+        "condition": "resin.isFull && strongest && weakestStats.critRate >= 30"
+      },
+      "priority": 11,
+      "text": "레진이 {resin.current}으로 가득 찼어요. 성유물 상태가 좋으니 주간 보스에 쓰는 게 효율적이에요. 할인 {resin.discountsLeft}회 남았어요."
+    },
+    {
+      "id": "resin_100_200",
+      "match": {
+        "keywords": ["레진"],
+        "condition": "resin.current >= 100 && !resin.isFull"
+      },
+      "priority": 8,
+      "text": "레진이 {resin.current} 있어요. {resin.hoursToFull}시간 후 가득 차니, 지금부터 파밍 시작하시면 좋아요."
+    },
+    {
+      "id": "resin_40_100",
+      "match": {
+        "keywords": ["레진"],
+        "condition": "resin.current >= 40 && resin.current < 100"
+      },
+      "priority": 8,
+      "text": "레진이 {resin.current} 남았어요. 일일 의뢰부터 처리하시면 좋아요."
+    },
+    {
+      "id": "resin_low_but_daily",
+      "match": {
+        "keywords": ["레진"],
+        "condition": "resin.current < 40 && !daily.isComplete"
+      },
+      "priority": 9,
+      "text": "레진이 {resin.current}이라 여유 있어요. 일일 의뢰 {daily.left}개 남았으니 먼저 끝내세요."
+    },
+    {
+      "id": "resin_recovery_time",
+      "match": {
+        "keywords": ["레진 회복", "레진 언제", "레진 시간"]
+      },
+      "priority": 10,
+      "text": "레진은 8분당 1 회복이에요. {resin.current}에서 가득 차려면 약 {resin.hoursToFull}시간 걸려요."
+    },
+    {
+      "id": "expedition_full",
+      "match": {
+        "keywords": ["파견", "탐사"]
+      },
+      "priority": 10,
+      "text": "파견 {expeditions.current}개 진행 중이에요. 완료된 건 회수하고 다시 보내세요."
+    },
+    {
+      "id": "expedition_not_full",
+      "match": {
+        "keywords": ["파견", "탐사"],
+        "condition": "!expeditions.isFull"
+      },
+      "priority": 9,
+      "text": "파견 {expeditions.current}개 중이에요. {expeditions.max}개까지 보낼 수 있으니 남은 자리 채우세요."
+    },
+    {
+      "id": "teapot_status",
+      "match": {
+        "keywords": ["선계", "속세의 주전자", "동굴"]
+      },
+      "priority": 10,
+      "text": "선계 화폐 {realm.current} 보유 중이에요. 매주 구매 가능한 아이템 챙기세요."
+    },
+    {
+      "id": "abyss_status",
+      "match": {
+        "keywords": ["나선", "나선비경"]
+      },
+      "priority": 10,
+      "text": "이번 시즌 나선비경 별 {abyss.stars}개 획득했어요. {abyss.starsLeft}개 남았어요."
+    },
+    {
+      "id": "character_status_generic",
+      "match": {
+        "keywords": ["캐릭터 상태", "캐릭터 어때"]
+      },
+      "priority": 5,
+      "text": "어떤 캐릭터인지 말씀해주세요. 예: 다이루크 상태"
+    },
+    {
+      "id": "character_level_advice",
+      "match": {
+        "keywords": ["레벨업", "키울", "성장"]
+      },
+      "priority": 8,
+      "text": "5성 캐릭터부터 Lv.80까지 키우는 게 좋아요. 레진을 레벨업 던전에 쓰세요."
+    },
+    {
+      "id": "character_constellation",
+      "match": {
+        "keywords": ["별자리", "돌파"]
+      },
+      "priority": 8,
+      "text": "별자리는 캐릭터 성능을 크게 올려요. 특히 C1, C2가 중요해요."
+    },
+    {
+      "id": "character_weapon",
+      "match": {
+        "keywords": ["무기 추천", "무기 뭐"]
+      },
+      "priority": 8,
+      "text": "무기는 캐릭터 특성에 맞춰야 해요. 5성 무기 없어도 4성 제련 5재면 충분합니다."
+    },
+    {
+      "id": "character_talent",
+      "match": {
+        "keywords": ["특성", "특성 레벨"]
+      },
+      "priority": 8,
+      "text": "특성은 주 사용 스킬부터 9까지 올리는 게 효율적이에요. 왕관은 신중히 쓰세요."
+    },
+    {
+      "id": "artifact_farm_priority",
+      "match": {
+        "keywords": ["성유물 파밍", "성유물 어디"]
+      },
+      "priority": 9,
+      "text": "성유물 파밍은 캐릭터당 주옵 5개 맞추는 게 우선이에요. 부옵은 그 다음입니다."
+    },
+    {
+      "id": "artifact_set_bonus",
+      "match": {
+        "keywords": ["성유물 세트", "세트 효과"]
+      },
+      "priority": 8,
+      "text": "성유물은 4세트 또는 2+2 세트가 일반적이에요. 세트 효과가 부옵보다 중요해요."
+    },
+    {
+      "id": "artifact_main_stat",
+      "match": {
+        "keywords": ["주옵", "주 옵션"]
+      },
+      "priority": 8,
+      "text": "주옵은 모래시계 공%, 성배 원소 피해, 왕관 치확/치피가 일반적이에요."
+    },
+    {
+      "id": "artifact_weakest_direct",
+      "match": {
+        "keywords": ["성유물 약한", "성유물 문제"]
+      },
+      "priority": 10,
+      "text": "{weakestCharacter}의 성유물이 가장 약해요. 치확 {weakestStats.critRate}퍼센트, 치피 {weakestStats.critDmg}퍼센트. 파밍 시급합니다."
+    },
+    {
+      "id": "party_recommend",
+      "match": {
+        "keywords": ["파티 추천", "파티 조합", "팀 추천"]
+      },
+      "priority": 9,
+      "text": "5성 딜러 + 서포터 + 힐러 + 서브딜러 조합이 기본이에요. 시뮬레이션 결과를 참고하세요."
+    },
+    {
+      "id": "party_weakness",
+      "match": {
+        "keywords": ["파티 약해", "파티 문제"]
+      },
+      "priority": 10,
+      "text": "파티가 약한 이유는 보통 성유물과 특성 레벨이에요. 딜러부터 강화하세요."
+    },
+    {
+      "id": "party_abyss",
+      "match": {
+        "keywords": ["나선 파티", "나선 조합"]
+      },
+      "priority": 10,
+      "text": "나선비경은 2개 파티가 필요해요. 각 파티에 딜러 1명, 서포터 2명, 힐러 1명이 기본입니다."
+    },
+    {
+      "id": "party_f2p",
+      "match": {
+        "keywords": ["무과금 파티", "4성 파티"]
+      },
+      "priority": 10,
+      "text": "무과금이면 4성 핵심 캐릭터(향릉, 행추, 베넷, 피슬)를 키우세요. 5성 못지않아요."
+    },
+    {
+      "id": "spiral_abyss_start",
+      "match": {
+        "keywords": ["나선 어떻게", "나선 시작"]
+      },
+      "priority": 9,
+      "text": "나선비경은 9층부터 도전하세요. 12층까지 3별씩 총 36별이 목표예요."
+    },
+    {
+      "id": "spiral_abyss_floor_12",
+      "match": {
+        "keywords": ["12층", "나선 12"]
+      },
+      "priority": 9,
+      "text": "12층은 딜량과 생존력 모두 필요해요. 성유물 완성 후 도전하세요."
+    },
+    {
+      "id": "spiral_abyss_stars",
+      "match": {
+        "keywords": ["별 몇", "별 개수"]
+      },
+      "priority": 9,
+      "text": "나선비경은 층당 3별, 총 36별이 최대예요. 별 1개당 원석 50개를 받아요."
+    },
+    {
+      "id": "gacha_should_pull",
+      "match": {
+        "keywords": ["뽑을까", "뽑아야", "가챠 할까"]
+      },
+      "priority": 9,
+      "text": "뽑기는 픽업 캐릭터의 성능과 본인 파티 시너지를 보고 결정하세요. 무과금은 90연차까지 모으는 게 안전해요."
+    },
+    {
+      "id": "gacha_pity",
+      "match": {
+        "keywords": ["천장", "픽뚫", "확률"]
+      },
+      "priority": 9,
+      "text": "5성 천장은 90연차, 소프트 피티는 74연차부터 올라가요. 50퍼센트 확률로 픽업이 나와요."
+    },
+    {
+      "id": "gacha_f2p",
+      "match": {
+        "keywords": ["무과금", "원석 부족", "원석 모으"]
+      },
+      "priority": 9,
+      "text": "무과금이면 일일 60원석 + 이벤트 + 나선으로 월 5000~8000원석 모여요. 픽업 선택이 중요해요."
+    },
+    {
+      "id": "primogem_source",
+      "match": {
+        "keywords": ["원석 어디", "원석 얻"]
+      },
+      "priority": 9,
+      "text": "원석은 일일 60개, 나선 600개, 이벤트 1000~2000개, 업적으로 모아요."
+    },
+    {
+      "id": "mora_source",
+      "match": {
+        "keywords": ["모라", "돈 부족"]
+      },
+      "priority": 9,
+      "text": "모라는 지맥 제압전(황금)에서 레진 20으로 5~6만을 얻어요. 레진이 남으면 여기 쓰세요."
     }
   ]
 }
