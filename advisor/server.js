@@ -5,7 +5,31 @@
 const http = require("http");
 const url = require("url");
 const path = require("path");
+// ============================================================
+// 질문 로그 수집
+// ============================================================
 const fs = require("fs");
+const LOG_DIR = path.join(__dirname, "logs");
+if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true });
+
+function logQuestion(input, type, uid = "unknown") {
+  try {
+    const logPath = path.join(
+      LOG_DIR,
+      `questions_${new Date().toISOString().slice(0, 10)}.jsonl`,
+    );
+    const line =
+      JSON.stringify({
+        q: input,
+        type, // "local" | "llm" | "ai"
+        uid,
+        at: new Date().toISOString(),
+      }) + "\n";
+    fs.appendFileSync(logPath, line, "utf-8");
+  } catch (e) {
+    // 로그 실패는 무시
+  }
+}
 
 const parseManager = require("./parse-manager");
 const profile = require("./profile");
@@ -252,6 +276,7 @@ async function handle(req, res) {
   if (method === "POST" && path === "/chat/local") {
     const chatApi = require("./chat-api");
     const body = await readBody(req);
+    logQuestion(body.input, "local"); // ← 추가
     const result = await chatApi.chatLocal(body.input);
     return json(res, result);
   }
@@ -260,6 +285,7 @@ async function handle(req, res) {
   if (method === "POST" && path === "/chat/ai") {
     const chatApi = require("./chat-api");
     const body = await readBody(req);
+    logQuestion(body.input, "ai"); // ← 추가
     const result = await chatApi.chatAI(body.input || "");
     return json(res, result);
   }
@@ -268,6 +294,7 @@ async function handle(req, res) {
   if (method === "POST" && path === "/chat/llm") {
     const chatApi = require("./chat-api");
     const body = await readBody(req);
+    logQuestion(body.input, "llm"); // ← 추가
     const result = await chatApi.chatLLM(body.input, body.localAnswer || "");
     return json(res, result);
   }

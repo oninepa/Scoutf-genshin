@@ -118,14 +118,6 @@
       "text": "뽑기는 픽업 캐릭터의 성능과 본인 파티 시너지를 보고 결정하세요. 무과금이면 90연차까지 모으는 게 안전합니다."
     },
     {
-      "id": "character_owned",
-      "match": {
-        "keywords": ["있나", "있어?", "보유"]
-      },
-      "priority": 8,
-      "text": "네, {roster.count}명 중에 있습니다."
-    },
-    {
       "id": "fallback_default",
       "match": {
         "keywords": []

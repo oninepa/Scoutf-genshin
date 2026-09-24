@@ -72,3 +72,6 @@ spike/gcsim.exe
 # 자산 (평문)
 advisor/assets/*.md
 advisor/assets/prompts/
+
+# 질문 로그 (로컬만)
+advisor/logs/

@@ -158,11 +158,6 @@ async function chatLLM(input, localAnswer, accountIndex = 1) {
     }
   }
 
-  // 로컬 브레인이 이미 답했으면 스킵 (중복 방지)
-  if (localAnswer && localAnswer.trim()) {
-    return { ok: true, llm: "" };
-  }
-
   try {
     // facts 가져오기
     const facts = localBrain.getFacts ? localBrain.getFacts(UID) : null;
@@ -176,6 +171,28 @@ async function chatLLM(input, localAnswer, accountIndex = 1) {
       explorations: facts.explorations,
       stats: facts.stats,
     });
+
+    // ─── 캐릭터 보유 확인 (특수 처리) ───
+    const ownedMatch = input.match(/([가-힣A-Za-z]+)\s*(있나|있어|있냐|보유)/);
+    if (ownedMatch) {
+      const charName = ownedMatch[1].trim();
+      const found = (facts.roster || []).find(
+        (c) => c.key === charName || c.key.includes(charName),
+      );
+      if (found) {
+        return {
+          ok: true,
+          llm: `네, ${found.key} Lv.${found.level} C${found.constellation || 0} 보유 중이에요.`,
+          type: "character_owned",
+        };
+      } else {
+        return {
+          ok: true,
+          llm: `${charName}은(는) 보유하지 않으셨어요.`,
+          type: "character_not_owned",
+        };
+      }
+    }
 
     // 템플릿 매칭
     const templates = getTemplates();
@@ -215,7 +232,6 @@ function getSuggestions(accountIndex = 1) {
     } else {
       suggestions.push("오늘 뭐 하면 좋을까?");
     }
-
     if (facts.roster && facts.roster.length > 0) {
       suggestions.push("내 캐릭터 티어 알려줘");
       suggestions.push("성유물 파밍해야 해?");
@@ -245,13 +261,11 @@ function getSuggestions(accountIndex = 1) {
   const unique = [...new Set(suggestions)];
   let fresh = unique.filter((s) => !askedQuestions.has(s));
 
-  // 모두 물어봤으면 리셋
   if (fresh.length === 0) {
     askedQuestions.clear();
     fresh = unique;
   }
 
-  // 부족하면 새 질문으로 채우기 (이미 물어본 것 제외)
   const defaults = [
     "다이루크 상태는?",
     "파티 추천해줘",
@@ -271,7 +285,6 @@ function getSuggestions(accountIndex = 1) {
     }
   }
 
-  // 그래도 부족하면 그냥 채움
   for (const d of defaults) {
     if (fresh.length >= 6) break;
     if (!fresh.includes(d)) fresh.push(d);
@@ -279,8 +292,9 @@ function getSuggestions(accountIndex = 1) {
 
   return fresh.slice(0, 6);
 }
+
 // ============================================================
-// AI 상세 답변 (LLM 사용, 팩트 요약만 전달)
+// AI 상세 답변 (LLM 사용)
 // ============================================================
 async function chatAI(input) {
   if (!input || !input.trim()) {
@@ -288,7 +302,6 @@ async function chatAI(input) {
   }
 
   try {
-    // 팩트 가져오기
     const facts = localBrain.getFacts ? localBrain.getFacts(UID) : null;
     if (!facts) {
       return {
@@ -297,7 +310,6 @@ async function chatAI(input) {
       };
     }
 
-    // analyzer로 context 생성
     const context = analyzer.analyze(facts, facts.roster || [], {
       teapot: facts.teapot,
       explorations: facts.explorations,
@@ -311,13 +323,11 @@ async function chatAI(input) {
     const { chat } = require("./llm-wrapper");
     const polisher = require("../engine/polisher");
 
-    // LLM 호출 함수 (chat 스타일)
     const llmFn = async (prompt) => {
       return await chat([{ role: "user", content: prompt }]);
     };
 
     if (template && template.id !== "fallback_default") {
-      // 템플릿 있음 → 다듬기 모드
       const polished = await polisher.polish(template.text, input, llmFn);
       return {
         ok: true,
@@ -327,7 +337,7 @@ async function chatAI(input) {
       };
     }
 
-    // ─── 2단계: 템플릿 없음 → LLM 새 답변 ───
+    // ─── 2단계: LLM 새 답변 ───
     const summary = buildAISummary(context);
     const sys = `너는 원신 게임 도우미 "지니"다.
 사용자 계정 데이터를 보고 정확한 조언을 해라.
@@ -360,37 +370,31 @@ async function chatAI(input) {
 function buildAISummary(ctx) {
   const lines = [];
 
-  // 기본 상태
   lines.push(`레진: ${ctx.resin.current}/${ctx.resin.max}`);
   lines.push(`일일: ${ctx.daily.done}/${ctx.daily.max}`);
   lines.push(`파견: ${ctx.expeditions.current}/${ctx.expeditions.max}`);
   lines.push(`나선: ${ctx.abyss.stars}별`);
 
-  // 전체 캐릭터 목록 (한글)
   const allNames = (ctx.roster.list || [])
     .map((c) => c.keyKo || c.key)
     .join(", ");
   lines.push(`보유 캐릭터 ${ctx.roster.count}명: ${allNames}`);
   lines.push(`그 중 5성: ${ctx.roster.fiveStars}`);
 
-  // 최강 캐릭터
   if (ctx.strongest) {
     lines.push(`최강: ${ctx.strongest.name} (${ctx.strongest.reason})`);
   }
 
-  // 약한 캐릭터
   if (ctx.weakestCharacter && ctx.weakestStats) {
     const cr = ctx.weakestStats.critRate?.toFixed(1) || 0;
     const cd = ctx.weakestStats.critDmg?.toFixed(1) || 0;
     lines.push(`약점: ${ctx.weakestCharacter} (치확 ${cr}%, 치피 ${cd}%)`);
   }
 
-  // 조언
   if (ctx.advice) {
     lines.push(`조언: ${ctx.advice}`);
   }
 
-  // 선계
   if (ctx.teapot) {
     lines.push(`선계: Lv.${ctx.teapot.level}, 쾌적도 ${ctx.teapot.comfort}`);
   }
