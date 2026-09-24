@@ -256,6 +256,14 @@ async function handle(req, res) {
     return json(res, result);
   }
 
+  // ---- POST /chat/ai ----
+  if (method === "POST" && path === "/chat/ai") {
+    const chatApi = require("./chat-api");
+    const body = await readBody(req);
+    const result = await chatApi.chatAI(body.input || "");
+    return json(res, result);
+  }
+
   // ---- POST /chat/llm ----
   if (method === "POST" && path === "/chat/llm") {
     const chatApi = require("./chat-api");

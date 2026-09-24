@@ -279,10 +279,114 @@ function getSuggestions(accountIndex = 1) {
 
   return fresh.slice(0, 6);
 }
+// ============================================================
+// AI 상세 답변 (LLM 사용, 팩트 요약만 전달)
+// ============================================================
+async function chatAI(input) {
+  if (!input || !input.trim()) {
+    return { ok: false, message: "빈 질문입니다." };
+  }
+
+  try {
+    // 팩트 가져오기
+    const facts = localBrain.getFacts ? localBrain.getFacts(UID) : null;
+    if (!facts) {
+      return {
+        ok: false,
+        message: "계정 데이터가 없습니다. 파싱 후 다시 시도해주세요.",
+      };
+    }
+
+    // 요약 팩트 생성 (analyzer)
+    const context = analyzer.analyze(facts, facts.roster || [], {
+      teapot: facts.teapot,
+      explorations: facts.explorations,
+      stats: facts.stats,
+    });
+
+    // LLM에게 보낼 요약 텍스트 (토큰 절약)
+    const summary = buildAISummary(context);
+
+    // LLM 호출
+    const { chat } = require("./llm-wrapper");
+    const sys = `너는 원신 게임 도우미 "지니"다.
+사용자 계정 데이터를 보고 정확한 조언을 해라.
+
+## 규칙
+1. 한국어만. 영어/중국어/일본어 금지.
+2. 마크다운 금지. 별표, 우물정, 백틱 쓰지 마라.
+3. 팩트에 없는 캐릭터/지역/아이템 지어내지 마라.
+4. 3~5문장으로 간결하게.
+5. 구체적인 숫자와 추천 포함.
+6. 사용자를 "여행자님"이라고 부른다.
+
+## 답변 구조
+1) 현황 요약 (1문장)
+2) 문제점/기회 (1~2문장)
+3) 구체적 추천 (1~2문장)`;
+
+    const userMsg = `[계정 요약]\n${summary}\n\n[질문]\n${input}`;
+
+    const answer = await chat([
+      { role: "system", content: sys },
+      { role: "user", content: userMsg },
+    ]);
+
+    return { ok: true, answer: answer.trim() };
+  } catch (e) {
+    console.warn("[chatAI] 에러:", e.message);
+    return { ok: false, message: `AI 답변 실패: ${e.message}` };
+  }
+}
+
+// ============================================================
+// LLM용 요약 팩트 생성 (토큰 절약)
+// ============================================================
+function buildAISummary(ctx) {
+  const lines = [];
+
+  // 기본 상태
+  lines.push(`레진: ${ctx.resin.current}/${ctx.resin.max}`);
+  lines.push(`일일: ${ctx.daily.done}/${ctx.daily.max}`);
+  lines.push(`파견: ${ctx.expeditions.current}/${ctx.expeditions.max}`);
+  lines.push(`나선: ${ctx.abyss.stars}별`);
+
+  // 전체 캐릭터 목록 (한글)
+  const allNames = (ctx.roster.list || [])
+    .map((c) => c.keyKo || c.key)
+    .join(", ");
+  lines.push(`보유 캐릭터 ${ctx.roster.count}명: ${allNames}`);
+  lines.push(`그 중 5성: ${ctx.roster.fiveStars}`);
+
+  // 최강 캐릭터
+  if (ctx.strongest) {
+    lines.push(`최강: ${ctx.strongest.name} (${ctx.strongest.reason})`);
+  }
+
+  // 약한 캐릭터
+  if (ctx.weakestCharacter && ctx.weakestStats) {
+    const cr = ctx.weakestStats.critRate?.toFixed(1) || 0;
+    const cd = ctx.weakestStats.critDmg?.toFixed(1) || 0;
+    lines.push(`약점: ${ctx.weakestCharacter} (치확 ${cr}%, 치피 ${cd}%)`);
+  }
+
+  // 조언
+  if (ctx.advice) {
+    lines.push(`조언: ${ctx.advice}`);
+  }
+
+  // 선계
+  if (ctx.teapot) {
+    lines.push(`선계: Lv.${ctx.teapot.level}, 쾌적도 ${ctx.teapot.comfort}`);
+  }
+
+  return lines.join("\n");
+}
 
 module.exports = {
   chatLocal,
   chatLLM,
+  chatAI,
   getSuggestions,
   refreshContext,
   buildSystemPrompt,

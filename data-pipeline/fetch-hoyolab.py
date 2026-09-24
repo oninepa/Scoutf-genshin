@@ -54,7 +54,7 @@ async def main():
         "ltoken_v2": ltoken,
     }
 
-    client = genshin.Client(cookies, uid=uid)
+    client = genshin.Client(cookies, uid=uid, lang="ko-kr")
     print("🚀 HoYoLab 데이터 조회 중...\n")
 
     result = {"uid": uid}

@@ -1,8 +1,5 @@
 // advisor/context.js
 // 계정 데이터를 LLM 프롬프트용 텍스트로 변환
-const decrypt = require("./decrypt");
-const { charKR, weaponKR } = decrypt.getNamesKo();
-
 const fs = require("fs");
 const path = require("path");
 
@@ -156,7 +153,7 @@ function buildContext(uid) {
     // 5성만 먼저 (요약, 한국어 이름)
     const fiveStars = hoyo.roster.filter((c) => c.rarity === 5);
     lines.push(
-      `★5성 캐릭터 (${fiveStars.length}명, 이들은 5성이다): ${fiveStars.map((c) => charKR(c.key)).join(", ")}`,
+      `★5성 캐릭터 (${fiveStars.length}명, 이들은 5성이다): ${fiveStars.map((c) => c.key).join(", ")}`,
     );
 
     // 주요 캐릭터 상세 (레벨 70+ 5성)
@@ -169,9 +166,7 @@ function buildContext(uid) {
       lines.push(`[주요 캐릭터 상세]`);
       mainChars.forEach((c) => {
         const w = c.weapon || {};
-        const weaponStr = w.key
-          ? `${weaponKR(w.key)} R${w.refinement || 1}`
-          : "없음";
+        const weaponStr = w.key ? `${w.key} R${w.refinement || 1}` : "없음";
 
         // 성유물 스탯 합계
         const stats = calcArtifactStats(c.artifacts);
@@ -179,7 +174,7 @@ function buildContext(uid) {
 
         const rarityStr = c.rarity === 5 ? "5성" : `${c.rarity}성`;
         lines.push(
-          `${charKR(c.key)} (${rarityStr}) Lv.${c.level} C${c.constellation || 0} | 무기: ${weaponStr}`,
+          `${c.key} (${rarityStr}) Lv.${c.level} C${c.constellation || 0} | 무기: ${weaponStr}`,
         );
         lines.push(`  성유물 세트: ${setStr}`);
         lines.push(

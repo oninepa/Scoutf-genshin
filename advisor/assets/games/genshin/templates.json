@@ -18,7 +18,7 @@
         "condition": "resin.isFull"
       },
       "priority": 5,
-      "text": "레진이 {resin.current}로 가득 찼어요. 지금 성유물 파밍에 쓰기 딱 좋아요."
+      "text": "레진이 {resin.current}로 가득 찼어요. {advice}"
     },
     {
       "id": "resin_low",
@@ -36,7 +36,7 @@
         "condition": "!daily.isComplete"
       },
       "priority": 10,
-      "text": "일일 의뢰 {daily.done}개 완료, {daily.left}개 남았어요."
+      "text": "여행자님, 일일 의뢰 {daily.left}개 남았어요. {advice}"
     },
     {
       "id": "daily_complete",
@@ -50,10 +50,16 @@
     {
       "id": "roster_count",
       "match": {
-        "keywords": ["내 캐릭터", "캐릭터 뭐"]
+        "keywords": [
+          "내 캐릭터",
+          "캐릭터 뭐",
+          "캐릭터 이름",
+          "가진 캐릭터",
+          "보유 캐릭터"
+        ]
       },
       "priority": 5,
-      "text": "보유 캐릭터 {roster.count}명이에요. 5성은 {roster.fiveStars}입니다."
+      "text": "여행자님은 총 {roster.count}명을 보유 중이에요. 5성은 {roster.fiveStars}입니다. {advice}"
     },
     {
       "id": "strongest_character",
@@ -61,7 +67,7 @@
         "keywords": ["가장 센", "최강", "제일 강한"]
       },
       "priority": 10,
-      "text": "가장 센 캐릭터는 {strongest.name}입니다. {strongest.reason}"
+      "text": "가장 센 캐릭터는 {strongest.name}입니다. {strongest.reason} {advice}"
     },
     {
       "id": "artifact_weak",
@@ -69,7 +75,7 @@
         "keywords": ["성유물", "파밍"]
       },
       "priority": 5,
-      "text": "{weakestCharacter}의 성유물이 약해요. 치확 {weakestStats.critRate}퍼센트로 매우 낮습니다. 파밍을 추천해요."
+      "text": "{weakestCharacter}의 성유물이 약해요. 치확 {weakestStats.critRate}퍼센트로 매우 낮습니다. {advice}"
     },
     {
       "id": "food_default",
@@ -110,6 +116,14 @@
       },
       "priority": 1,
       "text": "뽑기는 픽업 캐릭터의 성능과 본인 파티 시너지를 보고 결정하세요. 무과금이면 90연차까지 모으는 게 안전합니다."
+    },
+    {
+      "id": "character_owned",
+      "match": {
+        "keywords": ["있나", "있어?", "보유"]
+      },
+      "priority": 8,
+      "text": "네, {roster.count}명 중에 있습니다."
     },
     {
       "id": "fallback_default",

@@ -19,7 +19,7 @@ function analyze(facts, roster, extra = {}) {
       fiveStars: roster
         .filter((c) => c.rarity === 5)
         .slice(0, 6)
-        .map((c) => c.keyKo || c.key)
+        .map((c) => c.key)
         .join(", "),
       list: roster,
     },
@@ -49,17 +49,18 @@ function analyze(facts, roster, extra = {}) {
   if (scored.length > 0) {
     scored.sort((a, b) => a.score - b.score);
     const weakest = scored[0];
-    context.weakestCharacter = weakest.char.keyKo || weakest.char.key;
+    context.weakestCharacter = weakest.char.key;
     context.weakestStats = weakest.stats;
 
     scored.sort((a, b) => b.score - a.score);
     const best = scored[0];
     context.strongest = {
-      name: best.char.keyKo || best.char.key,
+      name: best.char.key,
       reason: `치확 ${best.stats.critRate.toFixed(1)}퍼센트, 치피 ${best.stats.critDmg.toFixed(1)}퍼센트로 균형이 좋습니다.`,
     };
   }
-
+  // advice 생성
+  context.advice = buildAdvice(context, roster);
   return context;
 }
 
@@ -91,5 +92,60 @@ function calcArtifactStats(artifacts) {
 
   return stats;
 }
+// ============================================================
+// 상황별 조언 생성
+// ============================================================
+function buildAdvice(facts, roster) {
+  const advices = [];
 
-module.exports = { analyze, calcArtifactStats };
+  // 1. 레진 + 성유물
+  if (facts.resin?.isFull && facts.weakestCharacter) {
+    advices.push(
+      `레진도 가득 찼으니 ${facts.weakestCharacter} 성유물 파밍을 먼저 추천해요.`,
+    );
+  } else if (facts.resin?.isFull) {
+    advices.push(
+      `레진이 ${facts.resin.current}으로 가득 찼어요. 지금 쓰셔야 해요.`,
+    );
+  } else if (facts.resin?.current < 40) {
+    advices.push(`레진이 ${facts.resin.current}이라 아직 여유 있어요.`);
+  }
+
+  // 2. 일일 + 파견
+  if (!facts.daily?.isComplete && facts.expeditions?.isFull) {
+    advices.push("일일 끝내고 파견도 회수하세요.");
+  } else if (facts.expeditions?.isFull) {
+    advices.push("파견이 다 완료됐으니 회수하세요.");
+  }
+
+  // 3. 나선
+  if (facts.abyss?.stars === 0) {
+    advices.push("나선비경은 아직 안 하셨네요. 여유될 때 도전해보세요.");
+  } else if (facts.abyss?.starsLeft > 0 && facts.abyss.starsLeft <= 3) {
+    advices.push(
+      `나선비경 별 ${facts.abyss.starsLeft}개만 더 따면 만점이에요.`,
+    );
+  }
+
+  // 4. 5성 캐릭터 성유물
+  if (facts.weakestCharacter && facts.weakestStats) {
+    const cr = facts.weakestStats.critRate || 0;
+    if (cr < 20) {
+      advices.push(
+        `${facts.weakestCharacter}의 치확이 ${cr.toFixed(1)}퍼센트로 낮아서 파밍 시급해요.`,
+      );
+    }
+  }
+
+  // 최대 2개만
+  return advices.slice(0, 2).join(" ");
+}
+
+// ============================================================
+// facts에 advice 추가
+// ============================================================
+function enrichFacts(facts, roster) {
+  facts.advice = buildAdvice(facts, roster);
+  return facts;
+}
+module.exports = { analyze, calcArtifactStats, buildAdvice, enrichFacts };

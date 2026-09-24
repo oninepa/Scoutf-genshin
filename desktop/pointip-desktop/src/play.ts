@@ -152,52 +152,69 @@ function appendChat(role: "user" | "genie", text: string) {
   log.scrollTop = log.scrollHeight;
 }
 
-async function sendChat(overrideText?: string) {
+async function sendChat(mode: "quick" | "ai" = "quick") {
   const input = document.getElementById("chat-input") as HTMLInputElement;
-  const text = (overrideText || input.value).trim();
+  const text = input.value.trim();
   if (!text) return;
 
   input.value = "";
   appendChat("user", text);
 
-  // === 1단계: 로컬 즉답 ===
-  let localAnswer = "";
-  try {
-    const localRes = await apiPost("/chat/local", { input: text });
-    if (localRes.ok) {
-      localAnswer = localRes.local || "";
-      if (localAnswer) {
-        appendChat("genie", localAnswer);
-      }
-    }
-  } catch (e) {
-    // 로컬 실패 — LLM에 위임
-  }
+  // 버튼 비활성화
+  const btnQuick = document.getElementById("btn-quick") as HTMLButtonElement;
+  const btnAi = document.getElementById("btn-ai") as HTMLButtonElement;
+  btnQuick.disabled = true;
+  btnAi.disabled = true;
 
-  // === 2단계: LLM 부연 (병렬) ===
+  const start = Date.now();
+
+  // 로딩 메시지
   const loading = document.createElement("div");
   loading.className = "chat-msg genie";
-
-  const loadingMsg = localAnswer
-    ? pickRandom(LOADING_AFTER_LOCAL)
-    : pickRandom(LOADING_NO_LOCAL);
-  loading.innerHTML = `<div class="chat-bubble loading">${loadingMsg}</div>`;
-
+  loading.innerHTML = `<div class="chat-bubble loading">${pickRandom(LOADING_NO_LOCAL)}</div>`;
   document.getElementById("chat-log")!.appendChild(loading);
   document.getElementById("chat-log")!.scrollTop = 99999;
 
-  apiPost("/chat/llm", { input: text, localAnswer })
-    .then((res) => {
+  try {
+    if (mode === "quick") {
+      // ⚡ 간단 빨리: 로컬 브레인 + 템플릿
+      const localRes = await apiPost("/chat/local", { input: text });
       loading.remove();
-      if (res.ok && res.llm) {
-        appendChat("genie", res.llm);
+
+      if (localRes.ok && localRes.local) {
+        appendChat("genie", localRes.local);
       }
-      loadSuggestions();
-    })
-    .catch(() => {
+
+      const llmRes = await apiPost("/chat/llm", {
+        input: text,
+        localAnswer: localRes.local || "",
+      });
+      if (llmRes.ok && llmRes.llm) {
+        appendChat("genie", llmRes.llm);
+      }
+    } else {
+      // 🧠 AI 상세: LLM
+      const res = await apiPost("/chat/ai", { input: text });
       loading.remove();
-      loadSuggestions();
-    });
+
+      if (res.ok && res.answer) {
+        appendChat("genie", res.answer);
+      } else {
+        appendChat("genie", res.message || "AI 답변을 받지 못했어요.");
+      }
+    }
+  } catch (e: any) {
+    loading.remove();
+    appendChat("genie", `에러: ${e.message}`);
+  }
+
+  const elapsed = ((Date.now() - start) / 1000).toFixed(2);
+  console.log(`[${mode}] ${elapsed}초`);
+
+  btnQuick.disabled = false;
+  btnAi.disabled = false;
+
+  loadSuggestions();
 }
 
 // ============================================================
@@ -214,7 +231,12 @@ async function loadSuggestions() {
       const btn = document.createElement("button");
       btn.className = "suggestion-btn";
       btn.textContent = s;
-      btn.addEventListener("click", () => sendChat(s));
+      btn.addEventListener("click", () => {
+        // 입력창에 질문 넣고 간단 빨리 실행
+        const input = document.getElementById("chat-input") as HTMLInputElement;
+        if (input) input.value = s;
+        sendChat("quick");
+      });
       el.appendChild(btn);
     }
   } catch {}
@@ -295,12 +317,35 @@ window.addEventListener("DOMContentLoaded", () => {
   loadSuggestions();
   setupOverlayControls();
 
+  // ⚡ 간단 빨리
   document
-    .getElementById("chat-send")
-    ?.addEventListener("click", () => sendChat());
+    .getElementById("btn-quick")
+    ?.addEventListener("click", () => sendChat("quick"));
+
+  // 🧠 AI 상세
+  document
+    .getElementById("btn-ai")
+    ?.addEventListener("click", () => sendChat("ai"));
+
+  // Enter = 간단 빨리 / Shift+Enter = AI 상세
   document.getElementById("chat-input")?.addEventListener("keydown", (e) => {
-    if ((e as KeyboardEvent).key === "Enter") sendChat();
+    if ((e as KeyboardEvent).key === "Enter") {
+      if ((e as KeyboardEvent).shiftKey) {
+        sendChat("ai");
+      } else {
+        sendChat("quick");
+      }
+    }
   });
 
   appendChat("genie", "안녕하세요, 여행자님. 오늘 무엇을 도와드릴까요?");
 });
+
+e.exports = {
+  chatLocal,
+  chatLLM,
+  chatAI, // ← 이게 있는지 확인
+  getSuggestions,
+  refreshContext,
+  buildSystemPrompt,
+};
