@@ -122,6 +122,32 @@ async function chatLocal(input) {
 
   askedQuestions.add(input.trim());
 
+  // 1. 템플릿 엔진 먼저 시도 (정확한 답변)
+  try {
+    const facts = localBrain.getFacts ? localBrain.getFacts(UID) : null;
+    if (facts) {
+      const context = analyzer.analyze(facts, facts.roster || [], {
+        teapot: facts.teapot,
+        explorations: facts.explorations,
+        stats: facts.stats,
+        userInput: input,
+      });
+      const templates = getTemplates();
+      const result = engine.pickTemplate(templates.templates, input, context);
+      if (result && result.id !== "fallback_default") {
+        return {
+          ok: true,
+          type: "template",
+          local: result.text,
+          skipLLM: true,
+        };
+      }
+    }
+  } catch (e) {
+    console.warn("[chatLocal] 템플릿 매칭 실패:", e.message);
+  }
+
+  // 2. 템플릿 미매칭 시 로컬브레인 (빠른 즉답)
   const local = localBrain.tryLocal(UID, input);
 
   if (local) {
@@ -170,6 +196,7 @@ async function chatLLM(input, localAnswer, accountIndex = 1) {
       teapot: facts.teapot,
       explorations: facts.explorations,
       stats: facts.stats,
+      userInput: input,
     });
 
     // ─── 캐릭터 보유 확인 (특수 처리) ───
@@ -314,6 +341,7 @@ async function chatAI(input) {
       teapot: facts.teapot,
       explorations: facts.explorations,
       stats: facts.stats,
+      userInput: input,
     });
 
     // ─── 1단계: 템플릿 시도 ───
@@ -328,7 +356,11 @@ async function chatAI(input) {
     };
 
     if (template && template.id !== "fallback_default") {
-      const polished = await polisher.polish(template.text, input, llmFn);
+      const polished = await polisher.polish(template.text, input, llmFn, {
+        name: "지니",
+        honorific: "여행자님",
+        tone: "따뜻하고 친근한 톤, 살짝 놀리는 유머도 좋다",
+      });
       return {
         ok: true,
         answer: polished,

@@ -74,4 +74,7 @@ advisor/assets/*.md
 advisor/assets/prompts/
 
 # 질문 로그 (로컬만)
-advisor/logs/
+advisor/logs
+advisor/assets/missions.json
+advisor/missions.json
+docs/PROJECT.MD

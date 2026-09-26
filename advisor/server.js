@@ -250,6 +250,7 @@ async function handle(req, res) {
       profile: prof,
       briefing: gen.briefing,
       tasks: gen.tasks,
+      state: gen.state,
     });
   }
 
@@ -303,6 +304,19 @@ async function handle(req, res) {
   if (method === "GET" && path === "/chat/suggestions") {
     const chatApi = require("./chat-api");
     return json(res, { ok: true, suggestions: chatApi.getSuggestions() });
+  }
+
+  // ---- GET /mission/random ----
+  if (method === "GET" && path === "/mission/random") {
+    const missions = require("./missions");
+    const picks = missions.randomMissions(3);
+    return json(res, { ok: true, missions: picks });
+  }
+
+  // ---- GET /mission/categories ----
+  if (method === "GET" && path === "/mission/categories") {
+    const missions = require("./missions");
+    return json(res, { ok: true, categories: missions.listCategories() });
   }
 
   // ---- 404 ----

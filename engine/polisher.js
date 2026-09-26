@@ -1,12 +1,17 @@
 // engine/polisher.js
 // 템플릿 답변을 LLM으로 다듬기 (게임 무관)
-// 핵심: 새 정보 추가 금지, 숫자 변경 금지
+// 핵심: 새 정보 추가 금지, 숫자 변경 금지, 길이 유지
 
 // ============================================================
 // 다듬기 프롬프트 생성
+// persona: { honorific, tone, name } — 게임별로 주입
 // ============================================================
-function buildPolishPrompt(templateText, userQuestion) {
-  return `너는 "지니"다. 게임을 하는 사용자를 돕는 AI 안내자.
+function buildPolishPrompt(templateText, userQuestion, persona = {}) {
+  const name = persona.name || "지니";
+  const honorific = persona.honorific || "여행자님";
+  const tone = persona.tone || "따뜻하고 친근한 톤";
+
+  return `너는 "${name}"다. 게임을 하는 사용자를 돕는 AI 안내자.
 
 ## 절대 규칙 (위반 시 실패)
 1. **아래 "기본 답변"의 정보만 사용해라.** 새로운 정보 추가 절대 금지.
@@ -17,11 +22,13 @@ function buildPolishPrompt(templateText, userQuestion) {
 6. 마크다운 금지. 별표, 우물정, 백틱 쓰지 마라.
 
 ## 다듬기 규칙
-- 기본 답변을 3~5문장으로 자연스럽게 풀어써라.
-- 사용자를 "여행자님"이라고 부른다.
-- 따뜻하고 친근한 톤. 살짝 놀리는 유머도 좋다.
-- 기본 답변이 1문장이면 2~3문장으로 늘려라.
-- 기본 답변이 3문장이면 그대로 유지하거나 다듬어라.
+- 기본 답변의 **핵심 정보(숫자, 이름, 사실)는 그대로 유지**해라.
+- 기본 답변을 **자연스럽게 다듬고, 필요하면 1~2문장 보충**해라.
+- 단, **새로운 사실(없는 캐릭터, 없는 수치) 추가는 금지**.
+- 사용자를 "${honorific}"이라고 부른다.
+- ${tone}.
+- 기본 답변이 1문장이면 4~5문장으로 자연스럽게 늘려도 좋다.
+- 질문 관련 팁을 제공해도 좋다. 단, 새로운 사실 추가 금지.
 
 ## 기본 답변
 ${templateText}
@@ -35,13 +42,14 @@ ${userQuestion}
 
 // ============================================================
 // LLM 다듬기 실행
+// persona: { honorific, tone, name }
 // ============================================================
-async function polish(templateText, userQuestion, llmFn) {
+async function polish(templateText, userQuestion, llmFn, persona = {}) {
   if (!templateText || !templateText.trim()) {
     return "";
   }
 
-  const prompt = buildPolishPrompt(templateText, userQuestion);
+  const prompt = buildPolishPrompt(templateText, userQuestion, persona);
 
   try {
     const result = await llmFn(prompt);

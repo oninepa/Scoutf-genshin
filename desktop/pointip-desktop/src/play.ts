@@ -121,19 +121,17 @@ async function loadDashboard() {
     }
 
     tasksList.innerHTML = "";
-    data.tasks.forEach((task: any, idx: number) => {
-      const card = document.createElement("div");
-      card.className = "task-card";
-      card.innerHTML = `
-        <div class="task-num">${idx + 1}</div>
-        <div class="task-body">
-          <div class="task-title">${escapeHtml(task.title)}</div>
-          <div class="task-detail">${escapeHtml(task.detail)}</div>
-          <div class="task-estimate">${escapeHtml(task.estimate)}</div>
-        </div>
-      `;
-      tasksList.appendChild(card);
-    });
+    const marks = ["①", "②", "③", "④", "⑤", "⑥", "⑦"];
+    const numbered = data.tasks
+      .map((t: any, idx: number) => `${marks[idx] || idx + 1 + "."} ${t.title}`)
+      .join(" · ");
+    tasksList.textContent = numbered;
+
+    // 미션 로드
+    loadMissions();
+
+    // 미션 로드
+    loadMissions();
   } catch (e: any) {
     briefingList.innerHTML = `<li class="error">서버 연결 실패</li>`;
     tasksList.innerHTML = `<div class="error">API 서버가 꺼져있습니다.</div>`;
@@ -153,7 +151,7 @@ function appendChat(role: "user" | "genie", text: string) {
 }
 
 async function sendChat(mode: "quick" | "ai" = "quick") {
-  const input = document.getElementById("chat-input") as HTMLInputElement;
+  const input = document.getElementById("chat-input") as HTMLTextAreaElement;
   const text = input.value.trim();
   if (!text) return;
 
@@ -185,12 +183,18 @@ async function sendChat(mode: "quick" | "ai" = "quick") {
         appendChat("genie", localRes.local);
       }
 
-      const llmRes = await apiPost("/chat/llm", {
-        input: text,
-        localAnswer: localRes.local || "",
-      });
-      if (llmRes.ok && llmRes.llm) {
-        appendChat("genie", llmRes.llm);
+      // skipLLM이 true면 LLM 호출 안 함 (템플릿 답변이 이미 완성)
+      if (localRes.ok && localRes.skipLLM) {
+        // LLM 스킵
+      } else {
+        // 로컬브레인만 답변했거나 답변 없음 → LLM 부연
+        const llmRes = await apiPost("/chat/llm", {
+          input: text,
+          localAnswer: localRes.local || "",
+        });
+        if (llmRes.ok && llmRes.llm) {
+          appendChat("genie", llmRes.llm);
+        }
       }
     } else {
       // 🧠 AI 상세: LLM
@@ -218,6 +222,20 @@ async function sendChat(mode: "quick" | "ai" = "quick") {
 }
 
 // ============================================================
+// 3-1. 추천 미션
+// ============================================================
+async function loadMissions() {
+  const el = document.getElementById("mission-list");
+  if (!el) return;
+  try {
+    const res = await apiGet("/mission/random");
+    if (!res.ok || !res.missions) return;
+    el.innerHTML = res.missions
+      .map((m: any) => escapeHtml(m.mission))
+      .join(" · ");
+  } catch {}
+}
+// ============================================================
 // 3. 동적 추천 질문
 // ============================================================
 async function loadSuggestions() {
@@ -233,7 +251,9 @@ async function loadSuggestions() {
       btn.textContent = s;
       btn.addEventListener("click", () => {
         // 입력창에 질문 넣고 간단 빨리 실행
-        const input = document.getElementById("chat-input") as HTMLInputElement;
+        const input = document.getElementById(
+          "chat-input",
+        ) as HTMLTextAreaElement;
         if (input) input.value = s;
         sendChat("quick");
       });
@@ -329,18 +349,27 @@ window.addEventListener("DOMContentLoaded", () => {
 
   // Enter = 간단 빨리 / Shift+Enter = AI 상세
   document.getElementById("chat-input")?.addEventListener("keydown", (e) => {
-    if ((e as KeyboardEvent).key === "Enter") {
-      if ((e as KeyboardEvent).shiftKey) {
-        sendChat("ai");
-      } else {
-        sendChat("quick");
-      }
+    if (
+      (e as KeyboardEvent).key === "Enter" &&
+      !(e as KeyboardEvent).shiftKey
+    ) {
+      e.preventDefault();
+      sendChat("quick");
+    } else if (
+      (e as KeyboardEvent).key === "Enter" &&
+      (e as KeyboardEvent).shiftKey
+    ) {
+      // Shift+Enter는 줄바꿈 허용
     }
   });
 
+  // 미션 새로고침
+  document
+    .getElementById("mission-refresh")
+    ?.addEventListener("click", () => loadMissions());
+
   appendChat("genie", "안녕하세요, 여행자님. 오늘 무엇을 도와드릴까요?");
 });
-
 e.exports = {
   chatLocal,
   chatLLM,

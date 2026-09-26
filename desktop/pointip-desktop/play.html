@@ -18,11 +18,11 @@
         <button id="close-btn" class="overlay-btn" title="닫기">✕</button>
       </div>
 
-      <!-- 상단: 브리핑 + 할 일 -->
+      <!-- 상단: 현 상태 + 할 일 + 미션 -->
       <div class="play-top">
         <section class="play-section">
           <div class="play-head">
-            <span class="play-title">📊 지난 성과</span>
+            <span class="play-title">📊 현 상태</span>
             <span id="parse-count" class="parse-count">-/-</span>
           </div>
           <ul id="briefing-list" class="briefing-list">
@@ -38,6 +38,22 @@
             <div class="loading">불러오는 중...</div>
           </div>
         </section>
+
+        <section class="play-section">
+          <div class="play-head">
+            <span class="play-title">✨ 추천 미션</span>
+            <button
+              id="mission-refresh"
+              class="mission-refresh-btn"
+              title="다른 미션"
+            >
+              🔄
+            </button>
+          </div>
+          <div id="mission-list" class="mission-list">
+            <div class="loading">불러오는 중...</div>
+          </div>
+        </section>
       </div>
 
       <!-- 하단: 대화 -->
@@ -47,13 +63,12 @@
         <div id="suggestions" class="suggestions"></div>
 
         <div class="chat-input-wrap">
-          <input
-            type="text"
+          <textarea
             id="chat-input"
             class="chat-input"
             placeholder="질문을 입력하세요..."
-            autocomplete="off"
-          />
+            rows="2"
+          ></textarea>
         </div>
         <div class="chat-buttons">
           <button id="btn-quick" class="chat-btn chat-btn-quick">

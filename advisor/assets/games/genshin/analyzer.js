@@ -2,13 +2,18 @@
 // facts → 템플릿 엔진용 context 변환
 
 function analyze(facts, roster, extra = {}) {
+  const userInput = extra.userInput || "";
+
   const context = {
     // 기본
     resin: {
       ...facts.resin,
       discountsLeft: facts.resin?.discountsLeft ?? 0,
     },
-    daily: facts.daily,
+    daily: {
+      ...facts.daily,
+      left: (facts.daily?.max ?? 4) - (facts.daily?.done ?? 0),
+    },
     expeditions: facts.expeditions,
     realm: facts.realm,
     abyss: facts.abyss,
@@ -31,6 +36,9 @@ function analyze(facts, roster, extra = {}) {
     // 가장 센 캐릭터 (치확+치피 기준)
     strongest: null,
 
+    // 질문한 캐릭터
+    queried: null,
+
     // 선계
     teapot: extra.teapot || null,
     explorations: extra.explorations || [],
@@ -38,7 +46,9 @@ function analyze(facts, roster, extra = {}) {
   };
 
   // 성유물 분석 (5성 중 치확+치피 낮은 순)
-  const fiveStars = roster.filter((c) => c.rarity === 5);
+  const fiveStars = roster.filter(
+    (c) => c.rarity === 5 && c.level >= 70 && c.key !== "여행자",
+  );
   const scored = fiveStars
     .map((c) => {
       const stats = calcArtifactStats(c.artifacts);
@@ -59,6 +69,13 @@ function analyze(facts, roster, extra = {}) {
       reason: `치확 ${best.stats.critRate.toFixed(1)}퍼센트, 치피 ${best.stats.critDmg.toFixed(1)}퍼센트로 균형이 좋습니다.`,
     };
   }
+
+  // 질문한 캐릭터 매칭
+  const queriedChar = findCharacterByName(roster, userInput);
+  if (queriedChar) {
+    context.queried = buildCharacterDetail(queriedChar);
+  }
+
   // advice 생성
   context.advice = buildAdvice(context, roster);
   return context;
@@ -99,6 +116,7 @@ function calcArtifactStats(artifacts) {
 
   return stats;
 }
+
 // ============================================================
 // 상황별 조언 생성
 // ============================================================
@@ -155,4 +173,52 @@ function enrichFacts(facts, roster) {
   facts.advice = buildAdvice(facts, roster);
   return facts;
 }
-module.exports = { analyze, calcArtifactStats, buildAdvice, enrichFacts };
+
+// ============================================================
+// 캐릭터 이름 추출 (roster에서 매칭)
+// ============================================================
+function findCharacterByName(roster, query) {
+  if (!roster || !query) return null;
+  // 이름이 긴 것부터 매칭 (부분 매칭 방지)
+  const sorted = [...roster].sort(
+    (a, b) => (b.key?.length || 0) - (a.key?.length || 0),
+  );
+  for (const c of sorted) {
+    if (c.key && query.includes(c.key)) return c;
+  }
+  return null;
+}
+
+// ============================================================
+// 캐릭터 상세 정보 생성
+// ============================================================
+function buildCharacterDetail(char) {
+  if (!char) return null;
+  const artifacts = char.artifacts || [];
+
+  // calcArtifactStats 재활용 (한글/영어 지원)
+  const stats = calcArtifactStats(artifacts);
+
+  return {
+    name: char.key,
+    level: char.level,
+    rarity: char.rarity,
+    constellation: char.constellation || 0,
+    friendship: char.friendship || 0,
+    weapon: char.weapon?.key || "없음",
+    weaponLevel: char.weapon?.level || 0,
+    weaponRefinement: char.weapon?.refinement || 0,
+    artifactCount: artifacts.length,
+    critRate: stats.critRate.toFixed(1),
+    critDmg: stats.critDmg.toFixed(1),
+  };
+}
+
+module.exports = {
+  analyze,
+  calcArtifactStats,
+  buildAdvice,
+  enrichFacts,
+  findCharacterByName,
+  buildCharacterDetail,
+};
