@@ -1,6 +1,29 @@
 // advisor/assets/games/genshin/analyzer.js
 // facts → 템플릿 엔진용 context 변환
 
+const fs = require("fs");
+const path = require("path");
+
+// spike 시뮬레이션 결과 로드 (파티 추천용)
+function loadSpikeResults() {
+  try {
+    const p = path.join(
+      __dirname,
+      "..",
+      "..",
+      "..",
+      "..",
+      "spike",
+      "output",
+      "results.json",
+    );
+    if (!fs.existsSync(p)) return [];
+    return JSON.parse(fs.readFileSync(p, "utf-8"));
+  } catch {
+    return [];
+  }
+}
+
 function analyze(facts, roster, extra = {}) {
   const userInput = extra.userInput || "";
 
@@ -39,6 +62,9 @@ function analyze(facts, roster, extra = {}) {
     // 질문한 캐릭터
     queried: null,
 
+    // 파티 추천
+    party: null,
+
     // 선계
     teapot: extra.teapot || null,
     explorations: extra.explorations || [],
@@ -71,9 +97,28 @@ function analyze(facts, roster, extra = {}) {
   }
 
   // 질문한 캐릭터 매칭
+  // 질문한 캐릭터 매칭
   const queriedChar = findCharacterByName(roster, userInput);
   if (queriedChar) {
     context.queried = buildCharacterDetail(queriedChar);
+  }
+
+  // 파티 추천 (spike 시뮬 결과)
+  const spikeResults = loadSpikeResults();
+  if (spikeResults.length > 0) {
+    const top3 = spikeResults.slice(0, 3).map((r) => ({
+      team: (r.party || "").replace(/_/g, " + "),
+      dps: r.dps || 0,
+      damage: r.damage || 0,
+    }));
+    context.party = {
+      top1: top3[0] || null,
+      top2: top3[1] || null,
+      top3: top3[2] || null,
+      all: top3,
+    };
+  } else {
+    context.party = null;
   }
 
   // advice 생성

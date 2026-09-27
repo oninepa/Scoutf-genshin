@@ -356,11 +356,17 @@ async function chatAI(input) {
     };
 
     if (template && template.id !== "fallback_default") {
-      const polished = await polisher.polish(template.text, input, llmFn, {
-        name: "지니",
-        honorific: "여행자님",
-        tone: "따뜻하고 친근한 톤, 살짝 놀리는 유머도 좋다",
-      });
+      const polished = await polisher.polish(
+        template.text,
+        input,
+        llmFn,
+        {
+          name: "지니",
+          honorific: "여행자님",
+          tone: "따뜻하고 친근한 톤, 살짝 놀리는 유머도 좋다",
+        },
+        context,
+      );
       return {
         ok: true,
         answer: polished,

@@ -1,3 +1,60 @@
+## 세션 6 (2026-09-27) 완료
+
+### 파티 추천 개인화 (analyzer + templates + polisher)
+
+**동기:** "나선 파티 추천", "파티가 약해" 같은 질문이 원론만 답하고, 실제 보유 캐릭터/시뮬 결과를 반영 안 함
+
+**수정:**
+
+1. **analyzer.js** — spike results 로드 + party 컨텍스트 추가
+   - `loadSpikeResults()` 함수 추가
+   - `context.party = { top1, top2, top3, all }` (시뮬 상위 3개)
+
+2. **templates.json** — 파티 템플릿 개인화
+   - `party_abyss` — `{party.top1.team}` 등 실제 조합 사용, condition `party && party.top1`
+   - `party_abyss_fallback` — party 없을 때 원론 (priority 11)
+   - `party_weakness` — weakestCharacter + party.top1 조합, condition 추가
+   - `party_weakness_fallback` — 원론 (priority 9)
+   - `region_domain_artifact` — keywords "비경" 제거 → "성유물 비경", "비경 어디", "비경 위치" (나선비경 오매칭 해결)
+   - `farm_default` — priority 1 → 6, keywords 확장
+
+3. **polisher.js** — roster + party를 시스템 프롬프트에 주입
+   - `buildPolishPrompt(templateText, userQuestion, persona, context)` 시그니처 확장
+   - context.roster, context.party, context.resin, context.weakestCharacter 주입
+   - 개인화 규칙 추가: "시뮬 최고 파티 실제 조합 포함"
+   - 절대 규칙 3개 추가:
+     - 7. 조어 금지 ("아비에스")
+     - 10. 영어 음차 금지 ("스파이럴 아비스" → "나선비경")
+     - 11. roster에 있는 캐릭터만 언급
+
+4. **chat-api.js** — polisher에 context 전달
+   - `polisher.polish(template.text, input, llmFn, persona, context)`
+
+### 결과
+
+- "나선 파티 추천" → 플린스 + 여행자 + 설탕 + 아이노 (DPS 3004) + top2, top3 실제 조합
+- "파티가 약해" → weakestCharacter + 최고 조합
+- "파티 왜 이렇게 약해" → 매칭 정상 (로컬브레인 fallback → party_weakness)
+- "나선비경 어떻게 해" → 정상 ("9층부터" 답변)
+- "효율 좋은 파밍 루트" → farm_default 정상
+- AI 상세 조어 사라짐
+
+### 남은 문제 (경미)
+
+- AI 상세에서 polisher가 roster 규칙을 어기고 없는 캐릭터 추천하는 경우 가끔 있음 (LLM 한계)
+- 완전 차단은 어려움
+
+## 다음 할 일 (세션 6 이후)
+
+1. **D. gcsim 몬스터/파티 조언** — spike 파이프라인 advisor 연결
+   - `spike/output/monsters.json` → advisor로 가져오기
+   - 몬스터 선택 → 파티 조언 템플릿
+   - 큰 작업 (3~4시간 예상)
+
+2. **재미 가이드** — polisher에 게임 재미 요소 부연 추가
+
+3. **Tauri 빌드** — 1차 배포 준비
+
 HANDOFF — 2026-09-25 (세션 3)
 
 GitHub: https://github.com/oninepa/scoutf-genshin

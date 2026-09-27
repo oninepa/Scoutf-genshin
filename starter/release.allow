@@ -1,0 +1,8 @@
+# 배포물에 넣을 파일/폴더만 한 줄씩 적는다 (# 는 주석, 백슬래시 없이 이름만).
+# 여기에 없는 것은 절대 배포 폴더(release-out)에 들어가지 않는다.
+index.html
+manifest.json
+sw.js
+public
+src
+licenses.txt
