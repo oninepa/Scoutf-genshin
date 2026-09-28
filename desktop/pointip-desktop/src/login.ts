@@ -1,5 +1,5 @@
 // src/login.ts
-// Pointip-Free — 로그인 화면
+// Pointip-Free — 로그인 화면 (서버 세션 기반)
 
 const API_BASE = "http://127.0.0.1:3000";
 
@@ -12,6 +12,7 @@ async function apiGet(path: string) {
   const res = await fetch(`${API_BASE}${path}`);
   return await res.json();
 }
+
 async function apiPost(path: string, body?: any) {
   const res = await fetch(`${API_BASE}${path}`, {
     method: "POST",
@@ -67,7 +68,7 @@ async function submit() {
   if (res.ok) {
     status("성공! 이동 중...", "success");
     setTimeout(() => {
-      window.location.href = "/index.html";
+      window.location.href = "/play.html";
     }, 500);
   } else {
     status(res.message || "실패", "error");
@@ -78,33 +79,17 @@ async function submit() {
 // 초기화
 // ============================================================
 window.addEventListener("DOMContentLoaded", async () => {
-  // 세션 있으면 바로 홈으로
+  // 서버 세션 있으면 바로 플레이로
   try {
     const st = await apiGet("/auth/status");
-    if (st.session) {
-      window.location.href = "/index.html";
+    if (st.loggedIn) {
+      window.location.href = "/play.html";
       return;
     }
+  } catch {}
 
-    if (st.hasUser) {
-      // 이미 사용자 있음 → 로그인 모드
-      setMode("login");
-      if (st.session?.email) {
-        (document.getElementById("email-input") as HTMLInputElement).value =
-          st.session.email;
-      }
-    } else {
-      // 사용자 없음 → 회원가입 모드
-      setMode("register");
-    }
-  } catch {
-    status(
-      "서버에 연결할 수 없습니다. server.js 실행 중인지 확인하세요.",
-      "error",
-    );
-  }
+  setMode("login");
 
-  // 이벤트
   document
     .getElementById("tab-login")
     ?.addEventListener("click", () => setMode("login"));
@@ -113,10 +98,9 @@ window.addEventListener("DOMContentLoaded", async () => {
     ?.addEventListener("click", () => setMode("register"));
   document.getElementById("submit-btn")?.addEventListener("click", submit);
 
-  // Enter
   document
     .getElementById("password-input")
     ?.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") submit();
+      if ((e as KeyboardEvent).key === "Enter") submit();
     });
 });

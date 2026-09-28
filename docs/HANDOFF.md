@@ -1,3 +1,64 @@
+## 세션 7 (2026-09-28) — Supabase 로그인 시스템
+
+### 완료
+
+- Supabase 프로젝트 생성 (yhiszempouprnxaoxusf)
+- DB 테이블 5개 (users_profile, genshin_uids, feedbacks, patches, user_settings)
+- Storage 버킷 2개 (downloads, patches)
+- Supabase Auth 연동 (auth.js 전면 교체)
+- 로그인 API 4개 (register, login, logout, me)
+- 서버 세션 파일 저장 (auth/session.json)
+- login.ts → 서버 세션 기반 자동 로그인
+- 로그인 → play.html 이동 정상
+
+### 환경변수 (.env)
+
+- SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_KEY
+- .gitignore에 .env 포함됨
+
+### 남은 작업
+
+- 구글 OAuth 추가
+- 로그아웃 UI (play.ts)
+- 프로필 편집 (nickname)
+- 사이트 (Cloudflare Pages)
+- 서버 API 분리 (analyzer/polisher)
+- 패치 시스템
+- Tauri 빌드 + 배포
+
+### 세션 6 추가 (2026-09-28) — 적(enemy) 공략 시스템
+
+**enemies.json 구축:**
+
+- HoYoWiki API (`@gonetone/hoyowiki-api`) 자동 수집
+- `spike/scrape-enemies.js` 스크립트
+- 총 437개 (weekly_boss 6, world_boss 14, elite 7, common 7, unknown 403)
+- 한국어 이름 기준 중복 방지
+
+**analyzer.js:**
+
+- `loadEnemies()`, `findEnemyByQuery()`, `buildEnemyDetail()` 추가
+- `context.enemy` 컨텍스트
+- type 한국어 매핑 (weekly_boss → 주간 보스)
+
+**templates.json:**
+
+- `enemy_guide`, `enemy_weakness`, `enemy_party`, `enemy_info`, `enemy_general` 5개
+- condition `enemy` 사용
+- priority 23~25
+
+**결과:**
+
+- "약타 어떻게 잡아?" → 타입, HP, 저항, 약점, 팁, 파티 top1
+- "폐허 수호자 공략", "물의 화신 파티", "풍마룡 정보", "타르탈리아 뭐야" 모두 정상
+
+**남은 작업 (PARKING 참조):**
+
+- unknown 403개 분류 + HP/저항 보충
+- 주간/필드보스 20개 HP/저항 정확값 (玉衡杯)
+- 영문 이름 별칭 ("아즈다하" → "약타" 매칭)
+- 자동 업데이트 파이프라인
+
 ## 세션 6 (2026-09-27) 완료
 
 ### 파티 추천 개인화 (analyzer + templates + polisher)

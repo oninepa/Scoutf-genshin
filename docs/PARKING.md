@@ -1,5 +1,58 @@
 \# PARKING.md — Pointip-Free
 
+## enemies.json 보충 작업 (2026-09-27 백로그)
+
+### 현재 상태
+
+- 총 437개 (HoYoWiki API 자동 수집)
+- 분류:
+  - unknown: 403 (수동 분류 필요)
+  - elite: 7
+  - world_boss: 14
+  - weekly_boss: 6
+  - common: 7
+- 문제: 대부분 `type: unknown`, `hp: 0`, `region: unknown`, `resistances` 기본값
+
+### 남은 작업 (우선순위)
+
+**1순위: 주간 보스 + 필드 보스 HP/저항 정확값**
+
+- 대상: weekly_boss 6개 + world_boss 14개 = 20개
+- 소스: 玉衡杯数据库, Biligame Wiki, GenshinData
+- 방법: 웹 스크래핑 또는 수동 입력
+
+**2순위: 정예(elite) 몬스터 확장**
+
+- 대상: 폐허 계열, 심연 계열, 사냥개 등
+- 약 30개
+
+**3순위: unknown 403개 자동 분류**
+
+- 이름 패턴으로 분류 (예: "슬라임" → common, "폐허" → elite)
+- 또는 玉衡杯 분류 데이터 매칭
+
+**4순위: 자동 업데이트 파이프라인**
+
+- 패치마다 신규 적 감지
+- HoYoWiki API 재실행 (scrape-enemies.js)
+- 신규 항목만 수동 보충 알림
+
+### 소스 조사 결과 (저장)
+
+- **玉衡杯数据库** — HP/저항 상세, 버전별 업데이트
+- **Biligame Wiki** — 몬스터 저항력 표, 페이즈별 저항
+- **HoYoWiki API** (`@gonetone/hoyowiki-api`) — 적 목록 (한국어), HP/저항 없음
+- **Dimbreath/GenshinData** — 게임 원본 데이터 (MonsterExcel)
+- **genshin-calc-data (Rust)** — 적별 원소 저항 상수 (AZHDAHA 등)
+
+### 실행 명령어
+
+```powershell
+cd C:\Users\oninepa\anotherwork\Pointip-Free\spike
+node scrape-enemies.js
+
+
+
 보류 아이디어. 지금 당장 하지 않음. 나중에 하나씩 검토.
 
 - **창 크기 확대** (프로필 편집, 쿠키 설정, AI 연결)
@@ -84,3 +137,4 @@
   · 지금은 옷장 12명만 파싱됨
   · `data-pipeline`에서 `good`으로 전체 캐릭터 조회 필요
   · 원래 이게 기본이었는데 빠짐
+```

@@ -24,6 +24,101 @@ function loadSpikeResults() {
   }
 }
 
+// 적(enemy) DB 로드 (공략용)
+let _enemiesCache = null;
+function loadEnemies() {
+  if (_enemiesCache) return _enemiesCache;
+  try {
+    const p = path.join(
+      __dirname,
+      "..",
+      "..",
+      "..",
+      "..",
+      "spike",
+      "output",
+      "enemies.json",
+    );
+    if (!fs.existsSync(p)) {
+      _enemiesCache = {};
+      return _enemiesCache;
+    }
+    _enemiesCache = JSON.parse(fs.readFileSync(p, "utf-8"));
+    return _enemiesCache;
+  } catch {
+    _enemiesCache = {};
+    return _enemiesCache;
+  }
+}
+
+// 질문에서 적 이름 매칭 (한국어 이름 기준, 긴 이름 우선)
+function findEnemyByQuery(query) {
+  if (!query) return null;
+  const enemies = loadEnemies();
+  const keys = Object.keys(enemies);
+
+  // 이름이 긴 것부터 매칭 (부분 매칭 방지)
+  const candidates = keys
+    .map((k) => ({ key: k, nameKr: enemies[k].nameKr || "" }))
+    .filter((c) => c.nameKr)
+    .sort((a, b) => b.nameKr.length - a.nameKr.length);
+
+  for (const c of candidates) {
+    if (query.includes(c.nameKr)) {
+      return { key: c.key, ...enemies[c.key] };
+    }
+  }
+  return null;
+}
+
+// 적 상세 정보 생성 (템플릿 치환용)
+function buildEnemyDetail(enemy) {
+  if (!enemy) return null;
+
+  const resMap = {
+    phys: "물리",
+    pyro: "불",
+    hydro: "물",
+    electro: "번개",
+    cryo: "얼음",
+    anemo: "바람",
+    geo: "바위",
+    dendro: "풀",
+  };
+
+  const resText = enemy.resistances
+    ? Object.entries(enemy.resistances)
+        .filter(([_, v]) => v !== 0.1)
+        .map(([k, v]) => `${resMap[k]} ${Math.round(v * 100)}퍼센트`)
+        .join(", ")
+    : "";
+
+  const weakText = (enemy.weaknesses || [])
+    .map((w) => resMap[w] || w)
+    .join(", ");
+
+  const typeMap = {
+    weekly_boss: "주간 보스",
+    world_boss: "필드 보스",
+    elite: "정예",
+    common: "일반",
+    abyss_special: "나선 특수",
+    unknown: "미분류",
+  };
+
+  return {
+    name: enemy.nameKr,
+    nameEn: enemy.nameEn || "",
+    type: typeMap[enemy.type] || enemy.type || "미분류",
+    region: enemy.region || "",
+    hp: enemy.hp || 0,
+    resistText: resText || "특별 저항 없음",
+    weakness: weakText || "특별 약점 없음",
+    mechanics: (enemy.mechanics || []).join(", "),
+    tips: enemy.tips || "",
+  };
+}
+
 function analyze(facts, roster, extra = {}) {
   const userInput = extra.userInput || "";
 
@@ -65,6 +160,9 @@ function analyze(facts, roster, extra = {}) {
     // 파티 추천
     party: null,
 
+    // 적 공략
+    enemy: null,
+
     // 선계
     teapot: extra.teapot || null,
     explorations: extra.explorations || [],
@@ -97,7 +195,6 @@ function analyze(facts, roster, extra = {}) {
   }
 
   // 질문한 캐릭터 매칭
-  // 질문한 캐릭터 매칭
   const queriedChar = findCharacterByName(roster, userInput);
   if (queriedChar) {
     context.queried = buildCharacterDetail(queriedChar);
@@ -121,6 +218,10 @@ function analyze(facts, roster, extra = {}) {
     context.party = null;
   }
 
+  // 적(enemy) 매칭
+  const queriedEnemy = findEnemyByQuery(userInput);
+  context.enemy = queriedEnemy ? buildEnemyDetail(queriedEnemy) : null;
+
   // advice 생성
   context.advice = buildAdvice(context, roster);
   return context;
@@ -131,7 +232,6 @@ function calcArtifactStats(artifacts) {
   const stats = { critRate: 0, critDmg: 0, atkPct: 0, er: 0, em: 0 };
   if (!artifacts || artifacts.length === 0) return stats;
 
-  // 스탯 이름 매핑 (한글/영어 → 내부 키)
   const isCritRate = (t) => t === "CRIT Rate" || t === "치명타 확률";
   const isCritDmg = (t) => t === "CRIT DMG" || t === "치명타 피해";
   const isAtkPct = (t) => t === "ATK%" || t === "공격력%";
@@ -168,7 +268,6 @@ function calcArtifactStats(artifacts) {
 function buildAdvice(facts, roster) {
   const advices = [];
 
-  // 1. 레진 + 성유물
   if (facts.resin?.isFull && facts.weakestCharacter) {
     advices.push(
       `레진도 가득 찼으니 ${facts.weakestCharacter} 성유물 파밍을 먼저 추천해요.`,
@@ -181,14 +280,12 @@ function buildAdvice(facts, roster) {
     advices.push(`레진이 ${facts.resin.current}이라 아직 여유 있어요.`);
   }
 
-  // 2. 일일 + 파견
   if (!facts.daily?.isComplete && facts.expeditions?.isFull) {
     advices.push("일일 끝내고 파견도 회수하세요.");
   } else if (facts.expeditions?.isFull) {
     advices.push("파견이 다 완료됐으니 회수하세요.");
   }
 
-  // 3. 나선
   if (facts.abyss?.stars === 0) {
     advices.push("나선비경은 아직 안 하셨네요. 여유될 때 도전해보세요.");
   } else if (facts.abyss?.starsLeft > 0 && facts.abyss.starsLeft <= 3) {
@@ -197,7 +294,6 @@ function buildAdvice(facts, roster) {
     );
   }
 
-  // 4. 5성 캐릭터 성유물
   if (facts.weakestCharacter && facts.weakestStats) {
     const cr = facts.weakestStats.critRate || 0;
     if (cr < 20) {
@@ -207,7 +303,6 @@ function buildAdvice(facts, roster) {
     }
   }
 
-  // 최대 2개만
   return advices.slice(0, 2).join(" ");
 }
 
@@ -224,7 +319,6 @@ function enrichFacts(facts, roster) {
 // ============================================================
 function findCharacterByName(roster, query) {
   if (!roster || !query) return null;
-  // 이름이 긴 것부터 매칭 (부분 매칭 방지)
   const sorted = [...roster].sort(
     (a, b) => (b.key?.length || 0) - (a.key?.length || 0),
   );
@@ -241,7 +335,6 @@ function buildCharacterDetail(char) {
   if (!char) return null;
   const artifacts = char.artifacts || [];
 
-  // calcArtifactStats 재활용 (한글/영어 지원)
   const stats = calcArtifactStats(artifacts);
 
   return {
@@ -266,4 +359,7 @@ module.exports = {
   enrichFacts,
   findCharacterByName,
   buildCharacterDetail,
+  loadEnemies,
+  findEnemyByQuery,
+  buildEnemyDetail,
 };

@@ -78,3 +78,5 @@ advisor/logs
 advisor/assets/missions.json
 advisor/missions.json
 docs/PROJECT.MD
+advisor/auth/
+advisor/config/

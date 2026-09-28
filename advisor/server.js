@@ -105,10 +105,11 @@ async function handle(req, res) {
   // ---- GET /auth/status ----
   if (method === "GET" && path === "/auth/status") {
     const auth = require("./auth");
+    const session = auth.loadSession();
     return json(res, {
       ok: true,
-      hasUser: auth.hasUser(),
-      session: auth.getSession(),
+      loggedIn: !!session,
+      user: session?.user || null,
     });
   }
 
@@ -116,7 +117,11 @@ async function handle(req, res) {
   if (method === "POST" && path === "/auth/register") {
     const auth = require("./auth");
     const body = await readBody(req);
-    const result = auth.register(body.email, body.password);
+    const result = await auth.register(
+      body.email,
+      body.password,
+      body.nickname,
+    );
     return json(res, result);
   }
 
@@ -124,15 +129,25 @@ async function handle(req, res) {
   if (method === "POST" && path === "/auth/login") {
     const auth = require("./auth");
     const body = await readBody(req);
-    const result = auth.login(body.email, body.password);
+    const result = await auth.login(body.email, body.password);
     return json(res, result);
   }
 
   // ---- POST /auth/logout ----
   if (method === "POST" && path === "/auth/logout") {
     const auth = require("./auth");
-    auth.logout();
+    auth.clearSession();
     return json(res, { ok: true });
+  }
+
+  // ---- GET /auth/me ----
+  if (method === "GET" && path === "/auth/me") {
+    const token = (req.headers.authorization || "").replace("Bearer ", "");
+    const auth = require("./auth");
+    const user = await auth.getUser(token);
+    if (!user) return json(res, { ok: false, message: "인증 필요" }, 401);
+    const profile = await auth.getProfile(user.id);
+    return json(res, { ok: true, user, profile });
   }
 
   // ---- DELETE /accounts/:n ----

@@ -270,7 +270,7 @@ async function setupOverlayControls() {
 
   // 최초: 항상 위 + 테두리 없음
   try {
-    await appWindow.setAlwaysOnTop(true);
+    await appWindow.setAlwaysOnTop(false);
   } catch {}
   try {
     await appWindow.setDecorations(false);
@@ -296,10 +296,10 @@ async function setupOverlayControls() {
     localStorage.setItem("play_opacity", String(v));
   });
 
-  // === 항상 위 토글 ===
-  let pinned = true;
+  // === 항상 위 토글 (초기: 비고정) ===
+  let pinned = false;
   const pinBtn = document.getElementById("pin-btn") as HTMLButtonElement;
-  if (pinBtn) pinBtn.style.color = "var(--accent)";
+  if (pinBtn) pinBtn.style.color = "var(--fg-dim)";
 
   pinBtn?.addEventListener("click", async () => {
     pinned = !pinned;
@@ -307,6 +307,7 @@ async function setupOverlayControls() {
       await appWindow.setAlwaysOnTop(pinned);
     } catch {}
     pinBtn.style.color = pinned ? "var(--accent)" : "var(--fg-dim)";
+    pinBtn.title = pinned ? "고정 해제" : "항상 위";
   });
 
   // === 닫기 ===

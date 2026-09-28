@@ -878,6 +878,57 @@
       "text": "초보자는 메인 퀘스트를 따라가며 모험 등급을 올리세요. 레진은 성유물보다 캐릭터 육성(레벨/무기/특성)에 먼저 쓰는 게 효율적이에요. 4성 핵심 캐릭터(향릉, 행추, 베넷, 피슬)도 꼭 키우세요."
     },
     {
+      "id": "enemy_guide",
+      "match": {
+        "keywords": [
+          "어떻게 잡아",
+          "어떻게 깨",
+          "공략",
+          "잡는 법",
+          "어떻게 이겨"
+        ],
+        "condition": "enemy"
+      },
+      "priority": 25,
+      "text": "{enemy.name} 공략이에요. 타입: {enemy.type}, 지역: {enemy.region}. HP: {enemy.hp}. 저항: {enemy.resistText}. 약점: {enemy.weakness}. 메커니즘: {enemy.mechanics}. 팁: {enemy.tips}"
+    },
+    {
+      "id": "enemy_weakness",
+      "match": {
+        "keywords": ["약점", "저항", "뭐로 잡아", "무슨 원소"],
+        "condition": "enemy"
+      },
+      "priority": 25,
+      "text": "{enemy.name} 약점은 {enemy.weakness}이에요. 저항: {enemy.resistText}. {enemy.tips}"
+    },
+    {
+      "id": "enemy_party",
+      "match": {
+        "keywords": ["파티", "조합", "추천"],
+        "condition": "enemy"
+      },
+      "priority": 25,
+      "text": "{enemy.name}은(는) {enemy.weakness} 약점이에요. {enemy.tips} 시뮬레이션 기준 최고 조합은 {party.top1.team} (DPS {party.top1.dps})이에요."
+    },
+    {
+      "id": "enemy_info",
+      "match": {
+        "keywords": ["정보", "뭐야", "스펙", "상태"],
+        "condition": "enemy"
+      },
+      "priority": 24,
+      "text": "{enemy.name} 정보예요. 타입: {enemy.type}, 지역: {enemy.region}, HP: {enemy.hp}. 저항: {enemy.resistText}. 약점: {enemy.weakness}."
+    },
+    {
+      "id": "enemy_general",
+      "match": {
+        "keywords": ["보스", "몬스터", "적"],
+        "condition": "enemy"
+      },
+      "priority": 23,
+      "text": "{enemy.name}은(는) {enemy.type}이에요. 약점: {enemy.weakness}. {enemy.tips}"
+    },
+    {
       "id": "fallback_default",
       "match": {
         "keywords": []
