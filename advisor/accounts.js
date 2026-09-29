@@ -5,7 +5,7 @@ const fs = require("fs");
 const path = require("path");
 
 const ACCOUNTS_DIR = path.join(__dirname, "accounts");
-const MAX_ACCOUNTS = 2;
+const MAX_ACCOUNTS = 5;
 
 // ============================================================
 // 서버 자동 감지 (UID 첫 자리)

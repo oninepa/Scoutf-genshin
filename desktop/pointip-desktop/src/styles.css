@@ -1393,3 +1393,14 @@ body {
   background: rgba(255, 100, 100, 0.2);
   color: #ff6b6b;
 }
+.tab-add {
+  font-weight: 700;
+  font-size: 16px;
+  padding: 6px 12px;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+
+.tab-add:hover {
+  opacity: 1;
+}

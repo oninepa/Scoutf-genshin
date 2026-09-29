@@ -1,3 +1,47 @@
+### 세션 8 후반 (2026-09-29) — 계정 5개 확장 + 계정별 데이터
+
+**계정 확장:**
+
+- MAX_ACCOUNTS 2 → 5 (accounts.js)
+- main.ts renderTabs: "+" 버튼으로 추가
+- 계정 3~5 슬롯 (빈 상태로 표시)
+- 탭: uid 있는 것만 표시
+
+**게임 프로필 편집 (계정별):**
+
+- profile.ts: URL ?account=N 기반 (탭 번호)
+- profile.html: 삭제 버튼 추가
+- 계정 이름/UID → 로컬 accounts/account_N/
+- Supabase는 마이페이지에서만 사용
+
+**계정 삭제:**
+
+- profile.html: "이 계정 삭제" 버튼
+- confirm → DELETE /accounts/:n → 폴더 통째 삭제
+
+**play 창 계정 전환:**
+
+- main.ts runChat: 기존 play 창 닫고 새로 열기
+- localStorage current_account 반영
+
+**task-engine 계정별 데이터:**
+
+- task-engine.js: getHoyolabPath(account) — 계정별 파일
+- server.js /briefing, /tasks, /dashboard → account 파라미터
+- 결과: account=1(henri) / account=2(oninepa) 분리 ✅
+
+**탭 자동 새로고침:**
+
+- Tauri event: account-updated
+- main.ts: listen → loadAccounts → renderTabs → renderPage
+- Tauri 권한: core:event:default, allow-listen, allow-emit
+- ⚠️ 권한 변경은 Tauri 완전 재시작 필요
+
+**버그 수정:**
+
+- server.js /briefing: account 변수 미정의 수정
+- server.js /tasks: account 파라미터 누락 수정
+
 ### 세션 8 (2026-09-29) — 마이페이지 + 게임 프로필 분리
 
 **마이페이지 (새):**

@@ -357,16 +357,18 @@ async function handle(req, res) {
 
   // ---- GET /briefing ----
   if (method === "GET" && path === "/briefing") {
-    const prof = profile.load();
-    const gen = taskEngine.generate(prof);
+    const account = parseInt(parsed.query.account || "1", 10);
+    const prof = profile.load(account);
+    const gen = taskEngine.generate(prof, account);
     if (!gen.ok) return json(res, gen);
     return json(res, { ok: true, briefing: gen.briefing });
   }
 
   // ---- GET /tasks ----
   if (method === "GET" && path === "/tasks") {
-    const prof = profile.load();
-    const gen = taskEngine.generate(prof);
+    const account = parseInt(parsed.query.account || "1", 10);
+    const prof = profile.load(account);
+    const gen = taskEngine.generate(prof, account);
     if (!gen.ok) return json(res, gen);
     return json(res, { ok: true, tasks: gen.tasks });
   }

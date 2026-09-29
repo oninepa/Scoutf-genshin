@@ -1,7 +1,13 @@
 // src/profile.ts
-// Pointip-Free — 프로필 편집 창
+// Pointip-Free — 게임 프로필 편집 (계정별)
 
 const API_BASE = "http://127.0.0.1:3000";
+
+// URL 파라미터 (탭별 account 번호)
+const urlParams = new URLSearchParams(window.location.search);
+const ACCOUNT_INDEX = Number(urlParams.get("account") || "1");
+
+let accounts: any[] = [];
 
 // ============================================================
 // API
@@ -91,47 +97,41 @@ function setChecked(name: string, values: string[]) {
 }
 
 // ============================================================
-// 계정 정보 저장 (닉네임 + UID) — Supabase
+// 계정 정보 저장 (별명 + UID)
 // ============================================================
 async function saveAccount() {
-  const nickname = (
+  const name = (
     document.getElementById("acc-name") as HTMLInputElement
   ).value.trim();
   const uid = (
     document.getElementById("acc-uid") as HTMLInputElement
   ).value.trim();
 
-  // UID 필수
-  if (!uid) {
-    status("UID를 입력하세요.", "error");
-    return;
-  }
   if (!/^\d{9}$/.test(uid)) {
     status("UID는 9자리 숫자입니다.", "error");
     return;
   }
 
-  // UID + 게임 계정 별명 저장
-  const res = await apiPost("/auth/uid", {
-    uid,
-    nickname,
-    server: detectServer(uid) || "",
-  });
-  if (!res.ok) {
+  const res = await apiPost(`/accounts/${ACCOUNT_INDEX}`, { name, uid });
+  if (res.ok) {
+    status("계정 정보 저장 완료", "success");
+    await loadAll();
+    // 부모 창에 갱신 알림 (탭 새로고침용)
+    try {
+      const { emit } = await import("@tauri-apps/api/event");
+      await emit("account-updated");
+    } catch {}
+  } else {
     status("저장 실패: " + (res.message || ""), "error");
-    return;
   }
-
-  status("계정 정보 저장 완료", "success");
-  await loadAll();
 }
 
 // ============================================================
-// 프로필 저장 (레벨/스타일/AI 답변) — 로컬 파일 유지
+// 프로필 저장 (레벨/스타일/과금/AI 답변)
 // ============================================================
 async function saveProfile() {
   const body = {
-    account: 1,
+    account: ACCOUNT_INDEX,
     user: {
       level: (document.getElementById("level-select") as HTMLSelectElement)
         .value,
@@ -157,24 +157,52 @@ async function saveProfile() {
 }
 
 // ============================================================
+// 계정 삭제
+// ============================================================
+async function deleteAccount() {
+  const ok = confirm(
+    `계정 ${ACCOUNT_INDEX}을(를) 완전히 삭제하시겠어요?\n(UID, 쿠키, 프로필 모두 삭제)`,
+  );
+  if (!ok) return;
+
+  const res = await fetch(`${API_BASE}/accounts/${ACCOUNT_INDEX}`, {
+    method: "DELETE",
+  });
+  const data = await res.json();
+  if (data.ok) {
+    status("계정 삭제 완료", "success");
+    try {
+      const { emit } = await import("@tauri-apps/api/event");
+      await emit("account-updated");
+    } catch {}
+    setTimeout(async () => {
+      const { getCurrentWindow } = await import("@tauri-apps/api/window");
+      await getCurrentWindow().close();
+    }, 800);
+  } else {
+    status("삭제 실패: " + (data.message || ""), "error");
+  }
+}
+
+// ============================================================
 // 초기 로드
 // ============================================================
 async function loadAll() {
-  // Supabase 프로필 + UID
-  const meRes = await apiGet("/auth/me");
-  if (meRes.ok) {
-    const p = meRes.profile || {};
-    const g = meRes.genshinUid || {};
+  // 계정 정보 (로컬)
+  const accRes = await apiGet("/accounts");
+  if (accRes.ok) accounts = accRes.accounts;
 
+  const acc = accounts[ACCOUNT_INDEX - 1];
+  if (acc) {
     (document.getElementById("acc-name") as HTMLInputElement).value =
-      g.nickname || "";
+      acc.name || "";
     (document.getElementById("acc-uid") as HTMLInputElement).value =
-      g.uid || "";
+      acc.uid || "";
     onUidInput();
   }
 
-  // 로컬 프로필 (레벨/스타일/AI 답변)
-  const profRes = await apiGet(`/profile?account=1`);
+  // 프로필 (로컬)
+  const profRes = await apiGet(`/profile?account=${ACCOUNT_INDEX}`);
   if (profRes.ok && profRes.profile) {
     const p = profRes.profile;
     const u = p.user || {};
@@ -205,6 +233,10 @@ window.addEventListener("DOMContentLoaded", () => {
   document
     .getElementById("profile-save-btn")
     ?.addEventListener("click", saveProfile);
+
+  const delBtn = document.getElementById("delete-btn");
+  if (delBtn) delBtn.addEventListener("click", deleteAccount);
+
   document
     .getElementById("spending-select")
     ?.addEventListener("change", updateSpendingHint);

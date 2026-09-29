@@ -5,7 +5,6 @@ const fs = require("fs");
 const path = require("path");
 
 const CACHE_DIR = path.join(__dirname, "cache");
-const HOYOLAB_PATH = path.join(CACHE_DIR, "hoyolab_latest.json");
 const SPIKE_PATH = path.join(
   __dirname,
   "..",
@@ -13,6 +12,24 @@ const SPIKE_PATH = path.join(
   "output",
   "results.json",
 );
+
+// 계정별 hoyolab 파일 경로
+function getHoyolabPath(account = 1) {
+  const individual = path.join(CACHE_DIR, `account_${account}`, "hoyolab.json");
+  const legacy = path.join(CACHE_DIR, "hoyolab_latest.json");
+  if (fs.existsSync(individual)) return individual;
+  if (account === 1 && fs.existsSync(legacy)) return legacy;
+  return null;
+}
+
+// 계정별 roster 파일 경로
+function getRosterPath(account = 1) {
+  const individual = path.join(CACHE_DIR, `account_${account}`, "roster.json");
+  const legacy = path.join(CACHE_DIR, "roster_latest.json");
+  if (fs.existsSync(individual)) return individual;
+  if (account === 1 && fs.existsSync(legacy)) return legacy;
+  return null;
+}
 
 // ============================================================
 // 유틸: 파일 로드
@@ -28,8 +45,9 @@ function loadJson(p) {
 // ============================================================
 // 계정 상태 수집
 // ============================================================
-function getState() {
-  const hoyo = loadJson(HOYOLAB_PATH);
+function getState(account = 1) {
+  const hoyolabPath = getHoyolabPath(account);
+  const hoyo = hoyolabPath ? loadJson(hoyolabPath) : null;
   const results = loadJson(SPIKE_PATH);
 
   if (!hoyo) {
@@ -335,8 +353,8 @@ function buildTasks(state, profile) {
 // ============================================================
 // 통합 생성
 // ============================================================
-function generate(profile) {
-  const state = getState();
+function generate(profile, account = 1) {
+  const state = getState(account);
   if (!state) {
     return {
       ok: false,
@@ -357,4 +375,5 @@ module.exports = {
   getState,
   buildBriefing,
   buildTasks,
+  getHoyolabPath,
 };

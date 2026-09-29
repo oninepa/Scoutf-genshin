@@ -2,6 +2,7 @@
 // Pointip-Free — 홈 화면 (계정별 완전 독립 페이지)
 
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { listen } from "@tauri-apps/api/event";
 
 const API_BASE = "http://127.0.0.1:3000";
 
@@ -80,8 +81,14 @@ function escapeHtml(s: string) {
 async function openWindow(label: string, url: string, title: string) {
   const existing = await WebviewWindow.getByLabel(label);
   if (existing) {
-    await existing.setFocus();
-    return;
+    // play 창은 항상 새로 (계정 전환용)
+    if (label === "play") {
+      await existing.close();
+      await new Promise((r) => setTimeout(r, 500));
+    } else {
+      await existing.setFocus();
+      return;
+    }
   }
 
   const isPlay = label === "play";
@@ -108,19 +115,18 @@ function renderTabs() {
   const el = document.getElementById("account-tabs")!;
   el.innerHTML = "";
 
-  // 계정 2가 없으면 탭 숨김
-  const hasAccount2 = accounts[1]?.uid;
-  if (!hasAccount2) {
+  // 등록된 계정 (uid 있는 것) 개수
+  const usedCount = accounts.filter((a) => a.uid).length;
+
+  // 0개면 섹션 숨김 (이론상 없음)
+  if (usedCount === 0) {
     section.style.display = "none";
-    if (currentTab !== 1) {
-      currentTab = 1;
-      localStorage.setItem("current_account", "1");
-    }
     return;
   }
 
   section.style.display = "block";
 
+  // 등록된 계정 탭
   accounts.forEach((acc, idx) => {
     const n = idx + 1;
     if (!acc.uid) return;
@@ -140,6 +146,26 @@ function renderTabs() {
     });
     el.appendChild(btn);
   });
+
+  // "+" 버튼 (5개 미만일 때만)
+  if (usedCount < accounts.length) {
+    const addBtn = document.createElement("button");
+    addBtn.className = "tab tab-add";
+    addBtn.textContent = "+";
+    addBtn.title = "계정 추가";
+    addBtn.addEventListener("click", () => {
+      // 빈 슬롯 찾기
+      const emptyIdx = accounts.findIndex((a) => !a.uid);
+      if (emptyIdx < 0) return;
+
+      const n = emptyIdx + 1;
+      currentTab = n;
+      localStorage.setItem("current_account", String(n));
+      renderTabs();
+      renderPage();
+    });
+    el.appendChild(addBtn);
+  }
 }
 
 // ============================================================
@@ -339,7 +365,12 @@ window.addEventListener("DOMContentLoaded", async () => {
       return;
     }
   } catch {}
-
+  // 자식 창에서 계정 변경 시 탭 새로고침
+  await listen("account-updated", async () => {
+    await loadAccounts();
+    renderTabs();
+    await renderPage();
+  });
   await loadAccounts();
   renderTabs();
   await renderPage();
