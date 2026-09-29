@@ -310,6 +310,16 @@ async function setupOverlayControls() {
     pinBtn.title = pinned ? "고정 해제" : "항상 위";
   });
 
+  // === 로그아웃 ===
+  document.getElementById("logout-btn")?.addEventListener("click", async () => {
+    const ok = confirm("로그아웃 하시겠어요?");
+    if (!ok) return;
+    try {
+      await fetch("http://127.0.0.1:3000/auth/logout", { method: "POST" });
+    } catch {}
+    window.location.href = "/login.html";
+  });
+
   // === 닫기 ===
   document.getElementById("close-btn")?.addEventListener("click", async () => {
     try {

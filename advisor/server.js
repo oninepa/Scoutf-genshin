@@ -142,14 +142,132 @@ async function handle(req, res) {
 
   // ---- GET /auth/me ----
   if (method === "GET" && path === "/auth/me") {
-    const token = (req.headers.authorization || "").replace("Bearer ", "");
     const auth = require("./auth");
-    const user = await auth.getUser(token);
-    if (!user) return json(res, { ok: false, message: "인증 필요" }, 401);
-    const profile = await auth.getProfile(user.id);
-    return json(res, { ok: true, user, profile });
+    const session = auth.loadSession();
+    if (!session) return json(res, { ok: false, message: "인증 필요" }, 401);
+    const profile = await auth.getProfile(session.user.id);
+    const genshinUid = await auth.getGenshinUid(session.user.id);
+    return json(res, {
+      ok: true,
+      user: session.user,
+      profile,
+      genshinUid,
+    });
+  }
+  // ---- POST /auth/profile/update ----
+  if (method === "POST" && path === "/auth/profile/update") {
+    const auth = require("./auth");
+    const session = auth.loadSession();
+    if (!session) return json(res, { ok: false, message: "인증 필요" }, 401);
+    const body = await readBody(req);
+    const result = await auth.updateProfile(session.user.id, body);
+    return json(res, result);
   }
 
+  // ---- POST /auth/uid ----
+  if (method === "POST" && path === "/auth/uid") {
+    const auth = require("./auth");
+    const session = auth.loadSession();
+    if (!session) return json(res, { ok: false, message: "인증 필요" }, 401);
+    const body = await readBody(req);
+    const result = await auth.saveGenshinUid(
+      session.user.id,
+      body.uid,
+      body.nickname || "",
+      body.server || "",
+    );
+    return json(res, result);
+  }
+
+  // ---- GET /auth/uid ----
+  if (method === "GET" && path === "/auth/uid") {
+    const auth = require("./auth");
+    const session = auth.loadSession();
+    if (!session) return json(res, { ok: false, message: "인증 필요" }, 401);
+    const uid = await auth.getGenshinUid(session.user.id);
+    return json(res, { ok: true, uid });
+  }
+
+  // ---- GET /auth/google/start ----
+  if (method === "GET" && path === "/auth/google/start") {
+    const auth = require("./auth");
+    const redirectTo =
+      parsed.query.redirect || "http://localhost:3000/auth/google/callback";
+    const result = await auth.getGoogleAuthUrl(redirectTo);
+    return json(res, result);
+  }
+
+  // ---- GET /auth/google/callback ----
+  if (method === "GET" && path === "/auth/google/callback") {
+    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+    res.end(`<!doctype html>
+<html lang="ko">
+<head><meta charset="UTF-8"><title>로그인 처리 중</title>
+<style>
+  body { font-family: sans-serif; text-align: center; padding: 60px 20px; background: #1a1a1a; color: #eee; }
+  h1 { font-size: 24px; margin-bottom: 16px; }
+  p { color: #aaa; font-size: 14px; }
+</style>
+</head>
+<body>
+  <h1 id="title">처리 중...</h1>
+  <p id="msg"></p>
+  <script>
+    (async () => {
+      const params = new URLSearchParams(window.location.hash.substring(1));
+      const access_token = params.get("access_token");
+      if (!access_token) {
+        document.getElementById("title").textContent = "❌ 토큰 없음";
+        return;
+      }
+      try {
+        const res = await fetch("http://localhost:3000/auth/google/session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            access_token,
+            refresh_token: params.get("refresh_token"),
+            expires_at: parseInt(params.get("expires_at") || "0", 10),
+          }),
+        });
+        const data = await res.json();
+        if (data.ok) {
+          document.getElementById("title").textContent = "✅ 로그인 완료";
+          document.getElementById("msg").textContent = "이 창을 닫고 ScoutF-Genshin 앱으로 돌아가세요.";
+        } else {
+          document.getElementById("title").textContent = "❌ 실패";
+          document.getElementById("msg").textContent = data.message || "";
+        }
+      } catch (e) {
+        document.getElementById("title").textContent = "❌ 오류";
+        document.getElementById("msg").textContent = e.message;
+      }
+    })();
+  </script>
+</body>
+</html>`);
+    return;
+  }
+
+  // ---- POST /auth/google/session ----
+  if (method === "POST" && path === "/auth/google/session") {
+    const body = await readBody(req);
+    const { access_token, refresh_token, expires_at } = body;
+    if (!access_token) {
+      return json(res, { ok: false, message: "토큰 없음" }, 400);
+    }
+    const auth = require("./auth");
+    const user = await auth.getUser(access_token);
+    if (!user) {
+      return json(res, { ok: false, message: "유효하지 않은 토큰" }, 401);
+    }
+    auth.saveSession(user, {
+      access_token,
+      refresh_token: refresh_token || "",
+      expires_at: expires_at || 0,
+    });
+    return json(res, { ok: true, user });
+  }
   // ---- DELETE /accounts/:n ----
   if (method === "DELETE" && accMatch) {
     const n = parseInt(accMatch[1], 10);

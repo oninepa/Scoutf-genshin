@@ -1,13 +1,7 @@
 // src/profile.ts
-// Pointip-Free — 프로필 편집 창 (계정별)
+// Pointip-Free — 프로필 편집 창
 
 const API_BASE = "http://127.0.0.1:3000";
-
-// URL 파라미터
-const urlParams = new URLSearchParams(window.location.search);
-const ACCOUNT_INDEX = Number(urlParams.get("account") || "1");
-
-let accounts: any[] = [];
 
 // ============================================================
 // API
@@ -97,36 +91,47 @@ function setChecked(name: string, values: string[]) {
 }
 
 // ============================================================
-// 계정 저장 (현재 계정)
+// 계정 정보 저장 (닉네임 + UID) — Supabase
 // ============================================================
 async function saveAccount() {
-  const name = (
+  const nickname = (
     document.getElementById("acc-name") as HTMLInputElement
   ).value.trim();
   const uid = (
     document.getElementById("acc-uid") as HTMLInputElement
   ).value.trim();
 
+  // UID 필수
+  if (!uid) {
+    status("UID를 입력하세요.", "error");
+    return;
+  }
   if (!/^\d{9}$/.test(uid)) {
     status("UID는 9자리 숫자입니다.", "error");
     return;
   }
 
-  const res = await apiPost(`/accounts/${ACCOUNT_INDEX}`, { name, uid });
-  if (res.ok) {
-    status("계정 정보 저장 완료", "success");
-    await loadAll();
-  } else {
+  // UID + 게임 계정 별명 저장
+  const res = await apiPost("/auth/uid", {
+    uid,
+    nickname,
+    server: detectServer(uid) || "",
+  });
+  if (!res.ok) {
     status("저장 실패: " + (res.message || ""), "error");
+    return;
   }
+
+  status("계정 정보 저장 완료", "success");
+  await loadAll();
 }
 
 // ============================================================
-// 프로필 저장
+// 프로필 저장 (레벨/스타일/AI 답변) — 로컬 파일 유지
 // ============================================================
 async function saveProfile() {
   const body = {
-    account: ACCOUNT_INDEX,
+    account: 1,
     user: {
       level: (document.getElementById("level-select") as HTMLSelectElement)
         .value,
@@ -155,21 +160,21 @@ async function saveProfile() {
 // 초기 로드
 // ============================================================
 async function loadAll() {
-  // 계정 정보
-  const accRes = await apiGet("/accounts");
-  if (accRes.ok) accounts = accRes.accounts;
+  // Supabase 프로필 + UID
+  const meRes = await apiGet("/auth/me");
+  if (meRes.ok) {
+    const p = meRes.profile || {};
+    const g = meRes.genshinUid || {};
 
-  const acc = accounts[ACCOUNT_INDEX - 1];
-  if (acc) {
     (document.getElementById("acc-name") as HTMLInputElement).value =
-      acc.name || "";
+      g.nickname || "";
     (document.getElementById("acc-uid") as HTMLInputElement).value =
-      acc.uid || "";
+      g.uid || "";
     onUidInput();
   }
 
-  // 프로필
-  const profRes = await apiGet(`/profile?account=${ACCOUNT_INDEX}`);
+  // 로컬 프로필 (레벨/스타일/AI 답변)
+  const profRes = await apiGet(`/profile?account=1`);
   if (profRes.ok && profRes.profile) {
     const p = profRes.profile;
     const u = p.user || {};

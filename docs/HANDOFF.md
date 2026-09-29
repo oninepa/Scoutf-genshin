@@ -1,3 +1,111 @@
+### 세션 8 (2026-09-29) — 마이페이지 + 게임 프로필 분리
+
+**마이페이지 (새):**
+
+- mypage.html + src/mypage.ts 신규
+- 로그인 계정 설정 (닉네임)
+- 홈 헤더 우측 상단 아바타 클릭 → 마이페이지 창
+- Supabase users_profile.nickname 사용
+
+**게임 프로필 편집 (기존, Supabase 전환):**
+
+- 계정 페이지 "프로필 편집" → "게임 프로필 편집"
+- profile.ts: /accounts(로컬) → /auth/me + /auth/uid (Supabase)
+- 게임 계정 별명 = genshin_uids.nickname
+- UID + 별명 + 서버 한 번에 저장
+
+**역할 분리:**
+
+- 마이페이지 = 사람 닉네임 (users_profile.nickname)
+- 게임 프로필 = 원신 계정 별명 (genshin_uids.nickname)
+
+**서버 (auth.js):**
+
+- updateProfile(userId, data) 추가
+- saveGenshinUid(userId, uid, nickname, server) 추가
+- getGenshinUid(userId) 추가
+
+**서버 (server.js):**
+
+- POST /auth/profile/update
+- POST /auth/uid
+- GET /auth/uid
+- GET /auth/me 확장 (profile + genshinUid)
+
+**UI (main.ts):**
+
+- 아바타 클릭 → openWindow("mypage", "/mypage.html", "마이페이지")
+- "게임 프로필 편집" 버튼 → openWindow("profile-{tab}", "/profile.html?account={tab}", ...)
+
+**버그 수정:**
+
+- 커스텀 X 버튼 제거 (OS X 버튼만 사용)
+- main.ts: auth.session → auth.loggedIn (무한 리다이렉트 해결)
+
+### 세션 7 후반 (2026-09-28) — 구글 OAuth + 로그아웃
+
+**구글 OAuth:**
+
+- Google Cloud Console 프로젝트 (scoutf-genshin)
+- Supabase Google Provider 활성화
+- 서버: /auth/google/start, /auth/google/callback, /auth/google/session
+- Supabase Implicit Flow (#access_token 해시)
+- 브라우저 JS가 자동으로 서버에 POST → session.json 저장
+- Tauri login.ts 폴링(2초) → 로그인 감지 → index.html 이동
+- login.html: "Google로 계속하기" 버튼
+- openUrl() (Tauri plugin-opener)
+
+**로그아웃:**
+
+- play.html: 🚪 버튼 (오버레이 컨트롤)
+- play.ts: 클릭 시 confirm → /auth/logout → login.html
+
+**버그 수정:**
+
+- main.ts: auth.session → auth.loggedIn (무한 리다이렉트 해결)
+- login.ts: 로그인 후 play.html → index.html
+- 핀 버튼 초기 비고정
+
+**전체 흐름:**
+[로그인] → [홈] → [설정] → [플레이]
+
+### 세션 7 추가 (2026-09-28 후반) — 구글 OAuth
+
+**Supabase Google Provider:**
+
+- Google Cloud Console 프로젝트 생성
+- OAuth 클라이언트 ID + Secret → Supabase에 등록
+- 리디렉션 URI: https://yhiszempouprnxaoxusf.supabase.co/auth/v1/callback
+
+**서버 (auth.js):**
+
+- getGoogleAuthUrl() — Google 로그인 URL 생성
+- exchangeCodeForSession() — OAuth 콜백 처리
+
+**서버 (server.js):**
+
+- GET /auth/google/start — Google 로그인 시작
+- GET /auth/google/callback — OAuth 콜백
+
+**앱 (login.html + login.ts):**
+
+- "Google로 계속하기" 버튼
+- openUrl() 로 브라우저 열기
+- 로그인 성공 시 play.html로 이동
+
+**결과:**
+
+- Google 로그인 성공
+- 자동 회원가입 (users_profile 자동 생성)
+- 이메일 로그인과 별개 계정으로 관리
+
+**남은 작업:**
+
+- 로그아웃 UI (play.ts)
+- Supabase URL 노출 개선 (커스텀 도메인 또는 프록시)
+- 프로필 편집 (닉네임)
+- UID 등록
+
 ## 세션 7 (2026-09-28) — Supabase 로그인 시스템
 
 ### 완료

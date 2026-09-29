@@ -216,7 +216,7 @@ async function renderPage() {
     </div>
 
     <div class="acc-actions">
-      <button id="profile-btn" class="mini-btn">프로필 편집</button>
+            <button id="profile-btn" class="mini-btn">게임 프로필 편집</button>
       <button id="cookie-btn" class="mini-btn">쿠키 설정</button>
       <button id="parse-btn" class="mini-btn">데이터 새로고침</button>
     </div>
@@ -226,7 +226,11 @@ async function renderPage() {
 
   // 이벤트 바인딩
   document.getElementById("profile-btn")?.addEventListener("click", () => {
-    openWindow("profile", `profile.html?account=${currentTab}`, "프로필 편집");
+    openWindow(
+      `profile-${currentTab}`,
+      `/profile.html?account=${currentTab}`,
+      "게임 프로필 편집",
+    );
   });
 
   document
@@ -330,7 +334,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   // 로그인 체크
   try {
     const auth = await apiGet("/auth/status");
-    if (!auth.session) {
+    if (!auth.loggedIn) {
       window.location.href = "/login.html";
       return;
     }
@@ -339,6 +343,22 @@ window.addEventListener("DOMContentLoaded", async () => {
   await loadAccounts();
   renderTabs();
   await renderPage();
+  // 사용자 아바타 로드
+  (async () => {
+    try {
+      const me = await apiGet("/auth/me");
+      if (me.ok && me.user && me.user.email) {
+        const avatar = document.getElementById("user-avatar");
+        if (avatar) {
+          avatar.textContent = me.user.email[0].toUpperCase();
+          avatar.style.display = "flex";
+          avatar.addEventListener("click", () => {
+            openWindow("mypage", "/mypage.html", "마이페이지");
+          });
+        }
+      }
+    } catch {}
+  })();
 
   // 쿠키 모달 이벤트
   document

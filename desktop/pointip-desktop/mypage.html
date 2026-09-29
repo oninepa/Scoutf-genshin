@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="/src/styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>마이페이지</title>
+  </head>
+  <body>
+    <div class="app">
+      <header class="header">
+        <div class="brand">마이페이지</div>
+        <div class="subtitle">계정 설정</div>
+      </header>
+
+      <section class="settings-block">
+        <div class="settings-head">
+          <strong>계정 정보</strong>
+        </div>
+        <div class="settings-body">
+          <label class="login-label">이메일</label>
+          <div id="my-email" class="detail-value">(불러오는 중...)</div>
+
+          <label class="login-label">닉네임</label>
+          <input
+            type="text"
+            id="my-nickname"
+            class="key-input"
+            placeholder="닉네임 입력"
+            autocomplete="off"
+          />
+
+          <label class="login-label">등급</label>
+          <div id="my-tier" class="detail-value">(불러오는 중...)</div>
+
+          <button id="my-save-btn" class="run-btn" style="margin-top: 12px">
+            저장
+          </button>
+        </div>
+      </section>
+
+      <div id="status" class="status-box"></div>
+    </div>
+
+    <script type="module" src="/src/mypage.ts"></script>
+  </body>
+</html>

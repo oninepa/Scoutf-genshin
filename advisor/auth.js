@@ -172,6 +172,114 @@ function clearSession() {
     if (fs.existsSync(SESSION_FILE)) fs.unlinkSync(SESSION_FILE);
   } catch {}
 }
+// ============================================================
+// 구글 OAuth URL 생성
+// ============================================================
+async function getGoogleAuthUrl(
+  redirectTo = "http://localhost:1420/play.html",
+) {
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo,
+      skipBrowserRedirect: true,
+    },
+  });
+  if (error) return { ok: false, message: error.message };
+  return { ok: true, url: data.url };
+}
+
+// ============================================================
+// OAuth 콜백 처리 (code → session)
+// ============================================================
+async function exchangeCodeForSession(code) {
+  const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+  if (error) return { ok: false, message: error.message };
+
+  const user = { id: data.user.id, email: data.user.email };
+  const session = {
+    access_token: data.session.access_token,
+    refresh_token: data.session.refresh_token,
+    expires_at: data.session.expires_at,
+  };
+
+  // 서버 세션 저장
+  saveSession(user, session);
+  return { ok: true, user, session };
+}
+// ============================================================
+// 프로필 수정 (닉네임 등)
+// ============================================================
+async function updateProfile(userId, data) {
+  if (!userId) return { ok: false, message: "유저 ID 없음" };
+
+  const allowed = {};
+  if (data.nickname !== undefined) allowed.nickname = data.nickname;
+
+  if (Object.keys(allowed).length === 0) {
+    return { ok: false, message: "수정할 항목 없음" };
+  }
+
+  const { data: updated, error } = await supabase
+    .from("users_profile")
+    .update(allowed)
+    .eq("id", userId)
+    .select()
+    .single();
+
+  if (error) return { ok: false, message: error.message };
+  return { ok: true, profile: updated };
+}
+
+// ============================================================
+// 원신 UID 등록/수정
+// ============================================================
+async function saveGenshinUid(userId, uid, nickname = "", server = "") {
+  if (!userId) return { ok: false, message: "유저 ID 없음" };
+  if (!/^\d{9}$/.test(uid)) {
+    return { ok: false, message: "UID는 9자리 숫자입니다." };
+  }
+
+  // 기존 UID 있으면 업데이트, 없으면 삽입
+  const { data: existing } = await supabase
+    .from("genshin_uids")
+    .select("id")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (existing) {
+    const { data, error } = await supabase
+      .from("genshin_uids")
+      .update({ uid, nickname, server, is_primary: true })
+      .eq("user_id", userId)
+      .select()
+      .single();
+    if (error) return { ok: false, message: error.message };
+    return { ok: true, uid: data };
+  } else {
+    const { data, error } = await supabase
+      .from("genshin_uids")
+      .insert({ user_id: userId, uid, nickname, server, is_primary: true })
+      .select()
+      .single();
+    if (error) return { ok: false, message: error.message };
+    return { ok: true, uid: data };
+  }
+}
+// ============================================================
+// 원신 UID 조회
+// ============================================================
+async function getGenshinUid(userId) {
+  if (!userId) return null;
+  const { data, error } = await supabase
+    .from("genshin_uids")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("is_primary", true)
+    .maybeSingle();
+  if (error) return null;
+  return data;
+}
 module.exports = {
   register,
   login,
@@ -182,4 +290,9 @@ module.exports = {
   saveSession,
   loadSession,
   clearSession,
+  getGoogleAuthUrl,
+  exchangeCodeForSession,
+  updateProfile, // ← 추가
+  saveGenshinUid, // ← 추가
+  getGenshinUid, // ← 추가
 };
