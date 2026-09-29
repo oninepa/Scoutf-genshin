@@ -179,13 +179,33 @@ async function handle(req, res) {
     return json(res, result);
   }
 
-  // ---- GET /auth/uid ----
+  // ---- GET /auth/uid ---- (대표 UID 1개)
   if (method === "GET" && path === "/auth/uid") {
     const auth = require("./auth");
     const session = auth.loadSession();
     if (!session) return json(res, { ok: false, message: "인증 필요" }, 401);
     const uid = await auth.getGenshinUid(session.user.id);
     return json(res, { ok: true, uid });
+  }
+
+  // ---- GET /auth/uids ---- (모든 UID 목록)
+  if (method === "GET" && path === "/auth/uids") {
+    const auth = require("./auth");
+    const session = auth.loadSession();
+    if (!session) return json(res, { ok: false, message: "인증 필요" }, 401);
+    const uids = await auth.getAllGenshinUids(session.user.id);
+    return json(res, { ok: true, uids });
+  }
+
+  // ---- DELETE /auth/uid/:uid ---- (UID 삭제)
+  const uidDeleteMatch = path.match(/^\/auth\/uid\/(\d+)$/);
+  if (method === "DELETE" && uidDeleteMatch) {
+    const auth = require("./auth");
+    const session = auth.loadSession();
+    if (!session) return json(res, { ok: false, message: "인증 필요" }, 401);
+    const uidToDelete = uidDeleteMatch[1];
+    const result = await auth.deleteGenshinUid(session.user.id, uidToDelete);
+    return json(res, result);
   }
 
   // ---- GET /auth/google/start ----

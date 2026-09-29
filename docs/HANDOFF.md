@@ -1,3 +1,30 @@
+### 세션 8 최종 (2026-09-29) — Supabase UID 동기화 + UI 정리
+
+**Supabase UID 동기화:**
+
+- auth.js: getAllGenshinUids, deleteGenshinUid, saveGenshinUid upsert
+- server.js: GET /auth/uids, DELETE /auth/uid/:uid
+- main.ts: loadAccounts가 Supabase UID 기준으로 재구성
+- 로컬 = 쿠키 슬롯, Supabase = UID/별명 마스터
+- 이벤트: emitTo("main", "account-updated") — 창 간 이벤트
+- Tauri 권한: core:event:allow-emit-to
+
+**UI 정리:**
+
+- profile.html: "계정 정보 저장" 버튼 삭제 (1개로 통합)
+- profile.ts: saveProfile이 계정 + 프로필 동시 저장
+- 프로필 창 크기: 900x600
+
+**버그 수정:**
+
+- saveGenshinUid 중복 키 에러 (INSERT → upsert)
+- emit → emitTo (창 간 이벤트)
+
+**계정 5개 구조:**
+
+- 로컬 슬롯(1~5) ↔ Supabase UID 매칭
+- 삭제 시 로컬 + Supabase 동시 삭제
+
 ### 세션 8 후반 (2026-09-29) — 계정 5개 확장 + 계정별 데이터
 
 **계정 확장:**

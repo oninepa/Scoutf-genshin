@@ -92,12 +92,17 @@ async function openWindow(label: string, url: string, title: string) {
   }
 
   const isPlay = label === "play";
+  const isProfile = label.startsWith("profile-");
+
+  // 프로필 창은 길게 (저장 버튼 보이도록)
+  const width = isPlay ? 700 : isProfile ? 600 : 600;
+  const height = isPlay ? 800 : isProfile ? 900 : 700;
 
   new WebviewWindow(label, {
     url,
     title,
-    width: isPlay ? 700 : 600,
-    height: isPlay ? 800 : 700,
+    width,
+    height,
     resizable: true,
     center: true,
     decorations: !isPlay,
@@ -180,10 +185,11 @@ async function renderPage() {
     return;
   }
 
-  // 프로필 로드
+  // 프로필 로드 (로컬 슬롯 index 기준)
   let prof: any = { user: {}, ai: {} };
+  const localIndex = acc.index || currentTab;
   try {
-    const res = await apiGet(`/profile?account=${currentTab}`);
+    const res = await apiGet(`/profile?account=${localIndex}`);
     if (res.ok) prof = res.profile;
   } catch {}
 
@@ -251,10 +257,12 @@ async function renderPage() {
   `;
 
   // 이벤트 바인딩
+  const localIdx = acc.index || currentTab;
+
   document.getElementById("profile-btn")?.addEventListener("click", () => {
     openWindow(
-      `profile-${currentTab}`,
-      `/profile.html?account=${currentTab}`,
+      `profile-${localIdx}`,
+      `/profile.html?account=${localIdx}`,
       "게임 프로필 편집",
     );
   });
@@ -274,10 +282,12 @@ async function renderPage() {
 async function runParse() {
   const btn = document.getElementById("parse-btn") as HTMLButtonElement;
   if (!btn) return;
+  const acc = accounts[currentTab - 1];
+  const localIdx = acc?.index || currentTab;
   btn.disabled = true;
   btn.textContent = "새로고침 중...";
   try {
-    const res = await apiPost("/parse", { account: currentTab });
+    const res = await apiPost("/parse", { account: localIdx });
     if (res.ok) {
       alert(`새로고침 완료 (${res.count}/${res.max})`);
     } else {
@@ -304,7 +314,9 @@ async function runChat() {
     alert("쿠키가 없습니다. 쿠키 설정에서 입력하세요.");
     return;
   }
-  localStorage.setItem("current_account", String(currentTab));
+  // 로컬 슬롯 인덱스 저장 (play.ts가 이걸 씀)
+  const localIdx = acc.index || currentTab;
+  localStorage.setItem("current_account", String(localIdx));
   await openWindow("play", "play.html", "Pointip-Free · 플레이");
 }
 
@@ -313,7 +325,8 @@ async function runChat() {
 // ============================================================
 async function openCookieModal() {
   const acc = accounts[currentTab - 1];
-  const cookieRes = await apiGet(`/accounts/${currentTab}/cookie`);
+  const localIdx = acc?.index || currentTab;
+  const cookieRes = await apiGet(`/accounts/${localIdx}/cookie`);
   const cookie = cookieRes.cookie || "";
   const ltoken = cookie.match(/ltoken_v2=([^;]+)/)?.[1] || "";
   const ltuid = cookie.match(/ltuid_v2=([^;]+)/)?.[1] || "";
@@ -337,8 +350,10 @@ async function saveCookie() {
     return;
   }
 
+  const acc = accounts[currentTab - 1];
+  const localIdx = acc?.index || currentTab;
   const cookie = `ltoken_v2=${ltoken}; ltuid_v2=${ltuid};`;
-  await apiPost(`/accounts/${currentTab}`, { cookie });
+  await apiPost(`/accounts/${localIdx}`, { cookie });
 
   document.getElementById("cookie-modal")?.classList.add("hidden");
   await loadAccounts();
@@ -349,8 +364,31 @@ async function saveCookie() {
 // 데이터 로드
 // ============================================================
 async function loadAccounts() {
-  const res = await apiGet("/accounts");
-  if (res.ok) accounts = res.accounts;
+  // Supabase UID 목록 + 로컬 쿠키 상태 매칭
+  const [uidRes, localRes] = await Promise.all([
+    apiGet("/auth/uids"),
+    apiGet("/accounts"),
+  ]);
+
+  if (!uidRes.ok) {
+    accounts = [];
+    return;
+  }
+
+  const localList = localRes.accounts || [];
+
+  // Supabase UID 기준으로 계정 재구성 (로컬 슬롯 매칭)
+  accounts = uidRes.uids.map((su: any) => {
+    // 로컬에서 같은 UID 찾기 (쿠키, 슬롯 인덱스)
+    const local = localList.find((la: any) => la.uid === su.uid);
+    return {
+      uid: su.uid,
+      name: su.nickname || "",
+      server: su.server ? { name: su.server } : null,
+      hasCookie: local?.hasCookie || false,
+      index: local?.index || null, // 로컬 슬롯 (1~5)
+    };
+  });
 }
 
 // ============================================================
@@ -367,9 +405,12 @@ window.addEventListener("DOMContentLoaded", async () => {
   } catch {}
   // 자식 창에서 계정 변경 시 탭 새로고침
   await listen("account-updated", async () => {
+    console.log("[main] account-updated 수신!");
     await loadAccounts();
+    console.log("[main] accounts:", JSON.stringify(accounts));
     renderTabs();
     await renderPage();
+    console.log("[main] renderPage 완료");
   });
   await loadAccounts();
   renderTabs();

@@ -112,17 +112,35 @@ async function saveAccount() {
     return;
   }
 
+  // 1. 로컬 저장 (쿠키 매칭용 슬롯)
   const res = await apiPost(`/accounts/${ACCOUNT_INDEX}`, { name, uid });
-  if (res.ok) {
-    status("계정 정보 저장 완료", "success");
-    await loadAll();
-    // 부모 창에 갱신 알림 (탭 새로고침용)
-    try {
-      const { emit } = await import("@tauri-apps/api/event");
-      await emit("account-updated");
-    } catch {}
-  } else {
-    status("저장 실패: " + (res.message || ""), "error");
+  if (!res.ok) {
+    status("로컬 저장 실패: " + (res.message || ""), "error");
+    return;
+  }
+
+  // 2. Supabase 저장 (마스터 — UID/별명)
+  const supaRes = await apiPost("/auth/uid", {
+    uid,
+    nickname: name,
+    server: detectServer(uid) || "",
+  });
+  if (!supaRes.ok) {
+    status("서버 저장 실패: " + (supaRes.message || ""), "error");
+    return;
+  }
+
+  status("계정 정보 저장 완료", "success");
+  await loadAll();
+
+  // 부모 창(홈)에 갱신 알림
+  try {
+    console.log("[profile] account-updated 발신!");
+    const { emitTo } = await import("@tauri-apps/api/event");
+    await emitTo("main", "account-updated");
+    console.log("[profile] 발신 성공");
+  } catch (e) {
+    console.error("[profile] 발신 실패:", e);
   }
 }
 
@@ -130,6 +148,38 @@ async function saveAccount() {
 // 프로필 저장 (레벨/스타일/과금/AI 답변)
 // ============================================================
 async function saveProfile() {
+  // 1. 계정 정보 (이름 + UID) 먼저 저장
+  const name = (
+    document.getElementById("acc-name") as HTMLInputElement
+  ).value.trim();
+  const uid = (
+    document.getElementById("acc-uid") as HTMLInputElement
+  ).value.trim();
+
+  if (!/^\d{9}$/.test(uid)) {
+    status("UID는 9자리 숫자입니다.", "error");
+    return;
+  }
+
+  // 로컬 저장
+  const accRes = await apiPost(`/accounts/${ACCOUNT_INDEX}`, { name, uid });
+  if (!accRes.ok) {
+    status("로컬 저장 실패: " + (accRes.message || ""), "error");
+    return;
+  }
+
+  // Supabase 저장
+  const supaRes = await apiPost("/auth/uid", {
+    uid,
+    nickname: name,
+    server: detectServer(uid) || "",
+  });
+  if (!supaRes.ok) {
+    status("서버 저장 실패: " + (supaRes.message || ""), "error");
+    return;
+  }
+
+  // 2. 프로필 (레벨/스타일/과금/AI 답변) 저장
   const body = {
     account: ACCOUNT_INDEX,
     user: {
@@ -149,11 +199,23 @@ async function saveProfile() {
   };
 
   const res = await apiPost("/profile", body);
-  if (res.ok) {
-    status("프로필 저장 완료", "success");
-  } else {
-    status("저장 실패: " + (res.errors ? res.errors.join(", ") : ""), "error");
+  if (!res.ok) {
+    status(
+      "프로필 저장 실패: " + (res.errors ? res.errors.join(", ") : ""),
+      "error",
+    );
+    return;
   }
+
+  // 3. 성공
+  status("저장 완료", "success");
+  await loadAll();
+
+  // 부모 창에 갱신 알림
+  try {
+    const { emitTo } = await import("@tauri-apps/api/event");
+    await emitTo("main", "account-updated");
+  } catch {}
 }
 
 // ============================================================
@@ -165,25 +227,38 @@ async function deleteAccount() {
   );
   if (!ok) return;
 
+  // 삭제할 UID 확보 (Supabase에서 지우기 위해)
+  const accRes = await apiGet("/accounts");
+  const acc = accRes.accounts?.[ACCOUNT_INDEX - 1];
+  const uidToDelete = acc?.uid;
+
+  // 1. 로컬 삭제 (폴더 통째)
   const res = await fetch(`${API_BASE}/accounts/${ACCOUNT_INDEX}`, {
     method: "DELETE",
   });
   const data = await res.json();
-  if (data.ok) {
-    status("계정 삭제 완료", "success");
-    try {
-      const { emit } = await import("@tauri-apps/api/event");
-      await emit("account-updated");
-    } catch {}
-    setTimeout(async () => {
-      const { getCurrentWindow } = await import("@tauri-apps/api/window");
-      await getCurrentWindow().close();
-    }, 800);
-  } else {
-    status("삭제 실패: " + (data.message || ""), "error");
+  if (!data.ok) {
+    status("로컬 삭제 실패: " + (data.message || ""), "error");
+    return;
   }
-}
 
+  // 2. Supabase 삭제 (UID)
+  if (uidToDelete) {
+    await fetch(`${API_BASE}/auth/uid/${uidToDelete}`, {
+      method: "DELETE",
+    });
+  }
+
+  status("계정 삭제 완료", "success");
+  try {
+    const { emitTo } = await import("@tauri-apps/api/event");
+    await emitTo("main", "account-updated");
+  } catch {}
+  setTimeout(async () => {
+    const { getCurrentWindow } = await import("@tauri-apps/api/window");
+    await getCurrentWindow().close();
+  }, 800);
+}
 // ============================================================
 // 초기 로드
 // ============================================================
@@ -227,9 +302,7 @@ async function loadAll() {
 // ============================================================
 window.addEventListener("DOMContentLoaded", () => {
   document.getElementById("acc-uid")?.addEventListener("input", onUidInput);
-  document
-    .getElementById("acc-save-btn")
-    ?.addEventListener("click", saveAccount);
+
   document
     .getElementById("profile-save-btn")
     ?.addEventListener("click", saveProfile);

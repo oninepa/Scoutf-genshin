@@ -240,31 +240,24 @@ async function saveGenshinUid(userId, uid, nickname = "", server = "") {
     return { ok: false, message: "UID는 9자리 숫자입니다." };
   }
 
-  // 기존 UID 있으면 업데이트, 없으면 삽입
-  const { data: existing } = await supabase
+  // upsert: (user_id, uid) UNIQUE 기준으로 없으면 insert, 있으면 update
+  const { data, error } = await supabase
     .from("genshin_uids")
-    .select("id")
-    .eq("user_id", userId)
-    .maybeSingle();
+    .upsert(
+      {
+        user_id: userId,
+        uid,
+        nickname,
+        server,
+        is_primary: true,
+      },
+      { onConflict: "user_id,uid" },
+    )
+    .select()
+    .single();
 
-  if (existing) {
-    const { data, error } = await supabase
-      .from("genshin_uids")
-      .update({ uid, nickname, server, is_primary: true })
-      .eq("user_id", userId)
-      .select()
-      .single();
-    if (error) return { ok: false, message: error.message };
-    return { ok: true, uid: data };
-  } else {
-    const { data, error } = await supabase
-      .from("genshin_uids")
-      .insert({ user_id: userId, uid, nickname, server, is_primary: true })
-      .select()
-      .single();
-    if (error) return { ok: false, message: error.message };
-    return { ok: true, uid: data };
-  }
+  if (error) return { ok: false, message: error.message };
+  return { ok: true, uid: data };
 }
 // ============================================================
 // 원신 UID 조회
@@ -280,6 +273,34 @@ async function getGenshinUid(userId) {
   if (error) return null;
   return data;
 }
+// ============================================================
+// 로그인 유저의 모든 원신 UID 목록
+// ============================================================
+async function getAllGenshinUids(userId) {
+  if (!userId) return [];
+  const { data, error } = await supabase
+    .from("genshin_uids")
+    .select("*")
+    .eq("user_id", userId)
+    .order("id", { ascending: true });
+  if (error) return [];
+  return data || [];
+}
+
+// ============================================================
+// 원신 UID 삭제
+// ============================================================
+async function deleteGenshinUid(userId, uid) {
+  if (!userId || !uid) return { ok: false, message: "인자 부족" };
+  const { error } = await supabase
+    .from("genshin_uids")
+    .delete()
+    .eq("user_id", userId)
+    .eq("uid", uid);
+  if (error) return { ok: false, message: error.message };
+  return { ok: true };
+}
+
 module.exports = {
   register,
   login,
@@ -292,7 +313,9 @@ module.exports = {
   clearSession,
   getGoogleAuthUrl,
   exchangeCodeForSession,
-  updateProfile, // ← 추가
-  saveGenshinUid, // ← 추가
-  getGenshinUid, // ← 추가
+  updateProfile,
+  saveGenshinUid,
+  getGenshinUid,
+  getAllGenshinUids,
+  deleteGenshinUid,
 };
