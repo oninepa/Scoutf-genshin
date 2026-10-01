@@ -8,7 +8,37 @@ const API_BASE = "http://127.0.0.1:3000";
 
 let currentTab = Number(localStorage.getItem("current_account") || "1");
 let accounts: any[] = [];
+// ============================================================
+// 업데이트 배너 표시
+// ============================================================
+function showUpdateBanner(latest: any) {
+  // 기존 배너 있으면 삭제
+  const existing = document.getElementById("update-banner");
+  if (existing) existing.remove();
 
+  const banner = document.createElement("div");
+  banner.id = "update-banner";
+  banner.className = "update-banner";
+  banner.innerHTML = `
+    <div class="update-banner-inner">
+      <span class="update-tag">새 버전</span>
+      <span class="update-text">v${latest.version} - ${latest.notes || "업데이트"}</span>
+      <button id="update-btn" class="update-btn">업데이트</button>
+    </div>
+  `;
+
+  // 헤더 아래에 삽입
+  const header = document.querySelector(".header");
+  if (header && header.parentNode) {
+    header.parentNode.insertBefore(banner, header.nextSibling);
+  }
+
+  // 버튼 이벤트
+  document.getElementById("update-btn")?.addEventListener("click", () => {
+    // 지금은 알림만 (다운로드 URL 없음)
+    alert(`v${latest.version} 다운로드 준비 중입니다.\n(다운로드 URL 미설정)`);
+  });
+}
 // ============================================================
 // 라벨
 // ============================================================
@@ -415,6 +445,25 @@ window.addEventListener("DOMContentLoaded", async () => {
   await loadAccounts();
   renderTabs();
   await renderPage();
+
+  // 로그인 후 자동 파싱 (계정별 1회, 쿠키 있으면)
+  (async () => {
+    for (let i = 0; i < accounts.length; i++) {
+      const acc = accounts[i];
+      if (acc.uid && acc.hasCookie && acc.index) {
+        try {
+          await apiPost("/parse", { account: acc.index });
+          console.log(`[main] 계정 ${acc.index} 자동 파싱 완료`);
+        } catch (e) {
+          console.warn(`[main] 계정 ${acc.index} 파싱 실패:`, e);
+        }
+      }
+    }
+    // 파싱 후 다시 로드
+    await loadAccounts();
+    renderTabs();
+    await renderPage();
+  })();
   // 사용자 아바타 로드
   (async () => {
     try {
@@ -431,7 +480,18 @@ window.addEventListener("DOMContentLoaded", async () => {
       }
     } catch {}
   })();
-
+  // 버전 체크 (패치 알림)
+  (async () => {
+    try {
+      const currentVersion = "0.1.0"; // TODO: package.json에서 자동
+      const res = await apiGet(`/version/check?current=${currentVersion}`);
+      if (res.ok && res.hasUpdate) {
+        showUpdateBanner(res.latest);
+      }
+    } catch (e) {
+      console.warn("[version] 체크 실패:", e);
+    }
+  })();
   // 쿠키 모달 이벤트
   document
     .getElementById("cookie-save-btn")

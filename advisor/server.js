@@ -473,6 +473,20 @@ async function handle(req, res) {
     const missions = require("./missions");
     return json(res, { ok: true, categories: missions.listCategories() });
   }
+  // ---- GET /version/check ----
+  if (method === "GET" && path === "/version/check") {
+    const patches = require("./patches");
+    const current = parsed.query.current || "0.0.0";
+    const result = await patches.checkUpdate(current);
+    return json(res, result);
+  }
+
+  // ---- GET /patches ----
+  if (method === "GET" && path === "/patches") {
+    const patches = require("./patches");
+    const latest = await patches.getLatest();
+    return json(res, { ok: true, latest });
+  }
 
   // ---- 404 ----
   return json(res, { ok: false, message: "Not found" }, 404);

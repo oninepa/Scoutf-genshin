@@ -1,3 +1,51 @@
+### 세션 10 (2026-10-01) — 패치 시스템 (서버 + UI)
+
+**Supabase:**
+
+- patches 테이블 사용
+  - version, notes, download_url, file_size, is_latest, is_mandatory
+- 테스트: 0.1.0, 0.1.1 등록
+
+**서버 (patches.js 신규):**
+
+- getLatest() — is_latest=true 조회
+- checkUpdate(current) — 버전 비교 (semver)
+- compareVersion(a, b) — 3단계 비교
+- registerPatch(version, notes, url, size, mandatory)
+
+**서버 (server.js):**
+
+- GET /version/check?current=0.1.0
+- GET /patches
+
+**클라이언트 (main.ts):**
+
+- 앱 시작 시 /version/check 호출
+- hasUpdate=true → showUpdateBanner(latest)
+- 배너: 상단, 파란 그라디언트, "업데이트" 버튼
+
+**클라이언트 (styles.css):**
+
+- .update-banner, .update-tag, .update-btn 스타일
+
+**파싱 설정 변경:**
+
+- MAX_PER_DAY: 10 → 24
+- AUTO_INTERVAL: 2시간 유지
+- 로그인 시 자동 파싱 (main.ts) — 계정별 1회
+
+**남은 것 (배포 시점에):**
+
+- Tauri 빌드 (설치 파일)
+- Tauri updater 플러그인 설정 (서명 키)
+- Supabase Storage에 다운로드 파일 업로드
+- download_url 채우기
+- 배너 클릭 → 실제 다운로드+설치
+
+**Tauri 경고:**
+
+- tauri 2.11.5 vs @tauri-apps/api 2.12.0 (마이너 차이, 무시 가능)
+
 ### 세션 9 (2026-10-01) — 자동 로그인 (refresh_token)
 
 **문제:**
