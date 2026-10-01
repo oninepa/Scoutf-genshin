@@ -1,3 +1,31 @@
+### 세션 9 (2026-10-01) — 자동 로그인 (refresh_token)
+
+**문제:**
+
+- 세션 만료 시(1시간) 로그인 화면
+- refresh_token 있지만 사용 안 함
+
+**수정:**
+
+- auth.js: loadSessionWithRefresh() 추가
+  - 유효 세션 있으면 그대로
+  - 만료 시 supabase.auth.refreshSession(refresh_token)
+  - 새 세션 저장 → 반환
+  - 실패 시 clearSession
+- server.js: 7곳 모두 await auth.loadSessionWithRefresh()
+  - /auth/status, /auth/me, /auth/uid, /auth/uids,
+    /auth/profile/update, /auth/google/session, DELETE /auth/uid/:uid
+
+**결과:**
+
+- Tauri 재시작 → 자동 로그인 (홈 화면) ✅
+- 세션 만료돼도 refresh로 유지
+
+**주의:**
+
+- PowerShell Set-Content는 한글 인코딩 깨짐
+- Node.js fs.writeFileSync('utf-8')로만 수정
+
 ### 세션 8 최종 (2026-09-29) — Supabase UID 동기화 + UI 정리
 
 **Supabase UID 동기화:**

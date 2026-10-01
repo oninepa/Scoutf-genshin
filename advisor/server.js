@@ -105,7 +105,7 @@ async function handle(req, res) {
   // ---- GET /auth/status ----
   if (method === "GET" && path === "/auth/status") {
     const auth = require("./auth");
-    const session = auth.loadSession();
+    const session = await auth.loadSessionWithRefresh();
     return json(res, {
       ok: true,
       loggedIn: !!session,
@@ -143,7 +143,7 @@ async function handle(req, res) {
   // ---- GET /auth/me ----
   if (method === "GET" && path === "/auth/me") {
     const auth = require("./auth");
-    const session = auth.loadSession();
+    const session = await auth.loadSessionWithRefresh();
     if (!session) return json(res, { ok: false, message: "인증 필요" }, 401);
     const profile = await auth.getProfile(session.user.id);
     const genshinUid = await auth.getGenshinUid(session.user.id);
@@ -157,7 +157,7 @@ async function handle(req, res) {
   // ---- POST /auth/profile/update ----
   if (method === "POST" && path === "/auth/profile/update") {
     const auth = require("./auth");
-    const session = auth.loadSession();
+    const session = await auth.loadSessionWithRefresh();
     if (!session) return json(res, { ok: false, message: "인증 필요" }, 401);
     const body = await readBody(req);
     const result = await auth.updateProfile(session.user.id, body);
@@ -167,7 +167,7 @@ async function handle(req, res) {
   // ---- POST /auth/uid ----
   if (method === "POST" && path === "/auth/uid") {
     const auth = require("./auth");
-    const session = auth.loadSession();
+    const session = await auth.loadSessionWithRefresh();
     if (!session) return json(res, { ok: false, message: "인증 필요" }, 401);
     const body = await readBody(req);
     const result = await auth.saveGenshinUid(
@@ -182,7 +182,7 @@ async function handle(req, res) {
   // ---- GET /auth/uid ---- (대표 UID 1개)
   if (method === "GET" && path === "/auth/uid") {
     const auth = require("./auth");
-    const session = auth.loadSession();
+    const session = await auth.loadSessionWithRefresh();
     if (!session) return json(res, { ok: false, message: "인증 필요" }, 401);
     const uid = await auth.getGenshinUid(session.user.id);
     return json(res, { ok: true, uid });
@@ -191,7 +191,7 @@ async function handle(req, res) {
   // ---- GET /auth/uids ---- (모든 UID 목록)
   if (method === "GET" && path === "/auth/uids") {
     const auth = require("./auth");
-    const session = auth.loadSession();
+    const session = await auth.loadSessionWithRefresh();
     if (!session) return json(res, { ok: false, message: "인증 필요" }, 401);
     const uids = await auth.getAllGenshinUids(session.user.id);
     return json(res, { ok: true, uids });
@@ -201,7 +201,7 @@ async function handle(req, res) {
   const uidDeleteMatch = path.match(/^\/auth\/uid\/(\d+)$/);
   if (method === "DELETE" && uidDeleteMatch) {
     const auth = require("./auth");
-    const session = auth.loadSession();
+    const session = await auth.loadSessionWithRefresh();
     if (!session) return json(res, { ok: false, message: "인증 필요" }, 401);
     const uidToDelete = uidDeleteMatch[1];
     const result = await auth.deleteGenshinUid(session.user.id, uidToDelete);

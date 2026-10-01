@@ -172,6 +172,42 @@ function clearSession() {
     if (fs.existsSync(SESSION_FILE)) fs.unlinkSync(SESSION_FILE);
   } catch {}
 }
+
+// ============================================================
+// 세션 로드 (만료 시 refresh 시도)
+// ============================================================
+async function loadSessionWithRefresh() {
+  // 1. 유효한 세션 있으면 그대로
+  const session = loadSession();
+  if (session) return session;
+
+  // 2. 만료/없음 → refresh_token으로 갱신
+  try {
+    if (!fs.existsSync(SESSION_FILE)) return null;
+    const raw = JSON.parse(fs.readFileSync(SESSION_FILE, "utf-8"));
+    if (!raw.refresh_token) return null;
+
+    const { data, error } = await supabase.auth.refreshSession({
+      refresh_token: raw.refresh_token,
+    });
+    if (error || !data.session) {
+      clearSession();
+      return null;
+    }
+
+    // 새 세션 저장
+    saveSession(raw.user, {
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+      expires_at: data.session.expires_at,
+    });
+
+    return loadSession();
+  } catch {
+    clearSession();
+    return null;
+  }
+}
 // ============================================================
 // 구글 OAuth URL 생성
 // ============================================================
@@ -317,5 +353,6 @@ module.exports = {
   saveGenshinUid,
   getGenshinUid,
   getAllGenshinUids,
+  loadSessionWithRefresh,
   deleteGenshinUid,
 };
