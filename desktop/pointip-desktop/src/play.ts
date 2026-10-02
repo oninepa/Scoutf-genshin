@@ -8,7 +8,7 @@ const API_BASE = "http://127.0.0.1:3000";
 // ============================================================
 // 재미있는 로딩 메시지
 // ============================================================
-const LOADING_AFTER_LOCAL = [
+export const LOADING_AFTER_LOCAL = [
   "지니가 좀 더 살펴보는 중...",
   "지니가 서재에서 책 찾는 중...",
   "지니가 볼펜을 잃어버려서 찾는 중...",
@@ -381,11 +381,3 @@ window.addEventListener("DOMContentLoaded", () => {
 
   appendChat("genie", "안녕하세요, 여행자님. 오늘 무엇을 도와드릴까요?");
 });
-e.exports = {
-  chatLocal,
-  chatLLM,
-  chatAI, // ← 이게 있는지 확인
-  getSuggestions,
-  refreshContext,
-  buildSystemPrompt,
-};

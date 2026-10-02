@@ -97,54 +97,6 @@ function setChecked(name: string, values: string[]) {
 }
 
 // ============================================================
-// 계정 정보 저장 (별명 + UID)
-// ============================================================
-async function saveAccount() {
-  const name = (
-    document.getElementById("acc-name") as HTMLInputElement
-  ).value.trim();
-  const uid = (
-    document.getElementById("acc-uid") as HTMLInputElement
-  ).value.trim();
-
-  if (!/^\d{9}$/.test(uid)) {
-    status("UID는 9자리 숫자입니다.", "error");
-    return;
-  }
-
-  // 1. 로컬 저장 (쿠키 매칭용 슬롯)
-  const res = await apiPost(`/accounts/${ACCOUNT_INDEX}`, { name, uid });
-  if (!res.ok) {
-    status("로컬 저장 실패: " + (res.message || ""), "error");
-    return;
-  }
-
-  // 2. Supabase 저장 (마스터 — UID/별명)
-  const supaRes = await apiPost("/auth/uid", {
-    uid,
-    nickname: name,
-    server: detectServer(uid) || "",
-  });
-  if (!supaRes.ok) {
-    status("서버 저장 실패: " + (supaRes.message || ""), "error");
-    return;
-  }
-
-  status("계정 정보 저장 완료", "success");
-  await loadAll();
-
-  // 부모 창(홈)에 갱신 알림
-  try {
-    console.log("[profile] account-updated 발신!");
-    const { emitTo } = await import("@tauri-apps/api/event");
-    await emitTo("main", "account-updated");
-    console.log("[profile] 발신 성공");
-  } catch (e) {
-    console.error("[profile] 발신 실패:", e);
-  }
-}
-
-// ============================================================
 // 프로필 저장 (레벨/스타일/과금/AI 답변)
 // ============================================================
 async function saveProfile() {

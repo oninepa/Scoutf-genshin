@@ -26,7 +26,7 @@ export default defineConfig(() => ({
     },
   },
 
-  // 멀티 페이지 빌드 (index, llm-settings, profile, play)
+  // 멀티 페이지 빌드 (index, login, mypage, profile, play, llm-settings)
   build: {
     rollupOptions: {
       input: {
@@ -35,6 +35,7 @@ export default defineConfig(() => ({
         "llm-settings": "llm-settings.html",
         profile: "profile.html",
         play: "play.html",
+        mypage: "mypage.html",
       },
     },
   },

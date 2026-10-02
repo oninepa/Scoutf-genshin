@@ -55,10 +55,31 @@ async function saveProfile() {
   }
 }
 
+async function logout() {
+  const ok = confirm("로그아웃 하시겠어요?");
+  if (!ok) return;
+
+  try {
+    await apiPost("/auth/logout", {});
+  } catch {}
+
+  try {
+    const { emitTo } = await import("@tauri-apps/api/event");
+    await emitTo("main", "account-updated");
+  } catch {}
+
+  // 로그인 화면으로 이동
+  window.location.href = "/login.html";
+}
+
 window.addEventListener("DOMContentLoaded", () => {
   document
     .getElementById("my-save-btn")
     ?.addEventListener("click", saveProfile);
+
+  document
+    .getElementById("logout-btn-mypage")
+    ?.addEventListener("click", logout);
 
   document.getElementById("my-nickname")?.addEventListener("keydown", (e) => {
     if ((e as KeyboardEvent).key === "Enter") saveProfile();

@@ -394,29 +394,24 @@ async function saveCookie() {
 // 데이터 로드
 // ============================================================
 async function loadAccounts() {
-  // Supabase UID 목록 + 로컬 쿠키 상태 매칭
+  // 로컬 5슬롯 기준 + Supabase UID 매칭
   const [uidRes, localRes] = await Promise.all([
     apiGet("/auth/uids"),
     apiGet("/accounts"),
   ]);
 
-  if (!uidRes.ok) {
-    accounts = [];
-    return;
-  }
-
   const localList = localRes.accounts || [];
+  const supabaseUids = uidRes.ok ? uidRes.uids || [] : [];
 
-  // Supabase UID 기준으로 계정 재구성 (로컬 슬롯 매칭)
-  accounts = uidRes.uids.map((su: any) => {
-    // 로컬에서 같은 UID 찾기 (쿠키, 슬롯 인덱스)
-    const local = localList.find((la: any) => la.uid === su.uid);
+  // 로컬 5슬롯 기준으로 배열 생성, Supabase UID를 슬롯에 매칭
+  accounts = localList.map((la: any) => {
+    const su = supabaseUids.find((u: any) => u.uid === la.uid);
     return {
-      uid: su.uid,
-      name: su.nickname || "",
-      server: su.server ? { name: su.server } : null,
-      hasCookie: local?.hasCookie || false,
-      index: local?.index || null, // 로컬 슬롯 (1~5)
+      uid: la.uid || "",
+      name: (su && su.nickname) || la.name || "",
+      server: la.server || null,
+      hasCookie: la.hasCookie || false,
+      index: la.index || null,
     };
   });
 }
