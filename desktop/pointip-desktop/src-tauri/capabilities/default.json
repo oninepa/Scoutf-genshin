@@ -17,6 +17,11 @@
     "core:window:allow-close",
     "core:webview:default",
     "core:webview:allow-create-webview-window",
-    "opener:default"
+    "opener:default",
+    "updater:default",
+    "updater:allow-check",
+    "updater:allow-download-and-install",
+    "process:default",
+    "process:allow-restart"
   ]
 }

@@ -1,3 +1,276 @@
+# HANDOFF — 2026-10-03 (세션 11~12)
+
+GitHub: https://github.com/oninepa/Scoutf-genshin
+최신 커밋: 15fdedb (세션 11: Tauri 빌드 성공 + 계정 탭/로그아웃 버그 수정)
+
+---
+
+## 세션 12 (2026-10-03) — Tauri updater 자동 업데이트 완성 ✅
+
+### 최종 결과
+
+- **0.1.1 → 0.1.2 자동 업데이트 전체 사이클 성공**
+- 앱 실행 → 배너 "v0.1.2" 뜸 → "업데이트" 클릭 → 자동 다운로드 → 서명 검증 → 자동 설치 → 자동 재시작 → v0.1.2
+
+### 완료한 것
+
+**1. 서명 키 생성 (minisign)**
+
+- 위치: `~/.tauri/pointip.key` (개인키), `~/.tauri/pointip.key.pub` (공개키)
+- ⚠️ 개인키 분실 시 기존 배포 앱 업데이트 불가 → **반드시 백업**
+- 비밀번호: 반드시 기억 (빌드 시 `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`로 필요)
+
+**2. tauri.conf.json 수정**
+
+````json
+{
+  "version": "0.1.2",
+  "bundle": {
+    "createUpdaterArtifacts": true,
+    "icon": [...]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6...",
+      "endpoints": [
+        "https://yhiszempouprnxaoxusf.supabase.co/storage/v1/object/public/patches/latest.json"
+      ]
+    }
+  }
+}
+
+3. Cargo.toml 추가
+
+toml
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"
+4. lib.rs 수정
+
+rust
+.plugin(tauri_plugin_opener::init())
+.plugin(tauri_plugin_updater::Builder::new().build())
+.plugin(tauri_plugin_process::init())
+5. capabilities/default.json 추가
+
+json
+"updater:default",
+"updater:allow-check",
+"updater:allow-download-and-install",
+"process:default",
+"process:allow-restart"
+6. main.ts — showUpdateBanner 버튼 클릭 핸들러
+
+ts
+import { check } from "@tauri-apps/plugin-updater";
+
+// 배너 버튼 클릭 시
+const update = await check();
+if (update) {
+  await update.downloadAndInstall((event) => {
+    // Started / Progress / Finished
+  });
+  const { relaunch } = await import("@tauri-apps/plugin-process");
+  await relaunch();
+}
+7. npm 패키지
+
+@tauri-apps/plugin-updater@2.13.1
+
+@tauri-apps/plugin-process
+
+8. Supabase Storage 설정
+
+버킷 patches → Public bucket ON (latest.json)
+
+버킷 downloads → Public bucket ON (설치 파일)
+
+9. Supabase patches 테이블 (Table Editor)
+
+id	version	is_latest	download_url
+1	0.1.0	FALSE	EMPTY
+2	0.1.1	FALSE	EMPTY
+3	0.1.2	TRUE	https://.../downloads/pointip-desktop_0.1.2_x64-setup.exe
+⚠️ 새 버전 낼 때마다 이 테이블 갱신 필요 (커스텀 배너 표시용)
+
+개발자 워크플로우 (새 버전 배포 시)
+버전 5곳 올리기
+
+desktop/pointip-desktop/package.json → version
+
+desktop/pointip-desktop/src-tauri/tauri.conf.json → version
+
+desktop/pointip-desktop/src-tauri/Cargo.toml → version
+
+desktop/pointip-desktop/index.html → <div class="footer-version">
+
+desktop/pointip-desktop/src/main.ts → const currentVersion
+
+빌드 (서명 환경변수 설정 후)
+
+powershell
+$env:TAURI_SIGNING_PRIVATE_KEY = Get-Content "$env:USERPROFILE\.tauri\pointip.key" -Raw
+$env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD = "비밀번호"
+cd desktop/pointip-desktop
+npm run tauri build
+결과물 확인
+
+text
+src-tauri\target\release\bundle\nsis\pointip-desktop_X.Y.Z_x64-setup.exe
+src-tauri\target\release\bundle\nsis\pointip-desktop_X.Y.Z_x64-setup.exe.sig
+Supabase Storage 업로드
+
+downloads 버킷 → 새 .exe 업로드
+
+patches 버킷 → 기존 latest.json 삭제 후 새로 업로드 (이름 충돌 방지)
+
+latest.json 내용 갱신
+
+json
+{
+  "version": "X.Y.Z",
+  "notes": "변경사항",
+  "pub_date": "2026-...T...Z",
+  "platforms": {
+    "windows-x86_64": {
+      "signature": "...sig 파일 내용...",
+      "url": "https://.../downloads/pointip-desktop_X.Y.Z_x64-setup.exe"
+    }
+  }
+}
+Supabase patches 테이블 갱신
+
+기존 is_latest=true 행 → FALSE
+
+새 행 추가 (is_latest=true)
+
+끝. 사용자는 앱 켤 때 자동 감지.
+
+주의사항 / 알려진 이슈
+Supabase CDN 캐시: 업로드 후 5~10분간 예전 파일이 응답될 수 있음. ?v=1 쿼리 붙이면 즉시 확인 가능.
+
+버전 소스 이중화: 배너(커스텀, patches 테이블) + 실제 다운로드(Tauri updater, latest.json) 두 개가 공존. 나중에 하나로 통합 필요.
+
+하드코딩된 버전: main.ts의 currentVersion과 index.html의 footer-version이 수동. 나중에 package.json에서 자동 읽기로 개선 필요.
+
+파일 이름 충돌: Supabase에 같은 이름 업로드 시 (1) suffix가 붙음. 반드시 기존 삭제 후 업로드.
+
+
+세션 11 (2026-10-02) — Tauri 빌드 성공 + 계정 탭/로그아웃 버그 수정
+해결한 문제
+Vite 멀티페이지: vite.config.ts input에 mypage 추가 (index, login, mypage, profile, play, llm-settings 6개)
+
+TypeScript 에러 42개 → 0
+
+tsconfig.json에 "moduleDetection": "force" 추가 (파일별 전역 스코프 충돌 해결)
+
+play.ts의 e.exports (CommonJS 잔재) 제거
+
+play.ts의 LOADING_AFTER_LOCAL export
+
+profile.ts의 saveAccount (중복 함수) 제거
+
+Tauri 버전 정렬: Cargo.toml의 tauri = "2" → "2.12" (npm @tauri-apps/api@2.12.0과 맞춤)
+
+첫 Tauri 빌드 성공 (8분 1초)
+
+MSI + NSIS 인스톨러 생성
+
+자동 로그인 문제 해결
+
+advisor/auth/session.json 파일이 남아서 자동 로그인됨
+
+→ session_backup.json으로 이름 변경 → 새 로그인 가능
+
+계정 추가 + 버튼 복구
+
+main.ts의 loadAccounts가 "Supabase UID 개수" 기준으로 accounts 배열 생성
+
+빈 슬롯 개념 없어져서 + 버튼 조건 (usedCount < accounts.length)이 false
+
+수정: 로컬 5슬롯 기준으로 배열 재구성, Supabase UID 매칭
+
+마이페이지 로그아웃 버튼 추가
+
+mypage.html + mypage.ts에 추가
+
+서버 /auth/logout → auth.clearSession() → session.json 삭제
+
+커밋
+15fdedb — 세션 11: Tauri 빌드 성공 + 계정 탭/로그아웃 버그 수정
+
+세션 10 (2026-10-01) — 패치 시스템 (서버 + UI)
+Supabase:
+
+patches 테이블 사용 (version, notes, download_url, file_size, is_latest, is_mandatory)
+
+테스트: 0.1.0, 0.1.1 등록
+
+서버 (patches.js 신규):
+
+getLatest() — is_latest=true 조회
+
+checkUpdate(current) — 버전 비교 (semver)
+
+compareVersion(a, b) — 3단계 비교
+
+registerPatch(version, notes, url, size, mandatory)
+
+서버 (server.js):
+
+GET /version/check?current=0.1.0
+
+GET /patches
+
+클라이언트 (main.ts):
+
+앱 시작 시 /version/check 호출
+
+hasUpdate=true → showUpdateBanner(latest)
+
+배너: 상단, 파란 그라디언트, "업데이트" 버튼
+
+클라이언트 (styles.css):
+
+.update-banner, .update-tag, .update-btn 스타일
+
+파싱 설정 변경:
+
+MAX_PER_DAY: 10 → 24
+
+AUTO_INTERVAL: 2시간 유지
+
+로그인 시 자동 파싱 (main.ts) — 계정별 1회
+
+남은 것 (세션 12에서 완료):
+
+~~Tauri 빌드 (설치 파일)~~
+
+~~Tauri updater 플러그인 설정 (서명 키)~~
+
+~~Supabase Storage에 다운로드 파일 업로드~~
+
+~~download_url 채우기~~
+
+~~배너 클릭 → 실제 다운로드+설치~~
+
+text
+
+그 아래에 기존 HANDOFF 내용(세션 9, 8, 7 등)이 이어지면 됩니다.
+
+---
+
+**이 작업의 의미:**
+
+앞으로 새 세션 열면 이 HANDOFF만 보고 이어갈 수 있습니다. updater 워크플로우(버전 5곳, 빌드, Supabase 업로드)가 명확히 기록됐습니다.
+
+---
+
+**지금 다음 중 선택하세요:**
+
+- **A)** HANDOFF 붙여넣기 완료 → 커밋 (오늘 변경사항)
+- **B)** 커밋 먼저 → HANDOFF는 다음에
+- **C)** 다른 것 먼저
+
 ### 세션 10 (2026-10-01) — 패치 시스템 (서버 + UI)
 
 **Supabase:**
@@ -706,4 +979,4 @@ GitHub: https://github.com/oninepa/scoutf-genshin
 GitHub: https://github.com/oninepa/scoutf-genshin
 
 [docs/HANDOFF.md 내용 붙여넣기]"
-```
+````

@@ -3,6 +3,7 @@
 
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { listen } from "@tauri-apps/api/event";
+import { check } from "@tauri-apps/plugin-updater";
 
 const API_BASE = "http://127.0.0.1:3000";
 
@@ -33,10 +34,60 @@ function showUpdateBanner(latest: any) {
     header.parentNode.insertBefore(banner, header.nextSibling);
   }
 
-  // 버튼 이벤트
-  document.getElementById("update-btn")?.addEventListener("click", () => {
-    // 지금은 알림만 (다운로드 URL 없음)
-    alert(`v${latest.version} 다운로드 준비 중입니다.\n(다운로드 URL 미설정)`);
+  // 버튼 이벤트 — 실제 updater 호출
+  document.getElementById("update-btn")?.addEventListener("click", async () => {
+    const btn = document.getElementById("update-btn") as HTMLButtonElement;
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "확인 중...";
+    }
+
+    try {
+      const update = await check();
+      if (!update) {
+        alert("이미 최신 버전입니다.");
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = "업데이트";
+        }
+        return;
+      }
+
+      // 다운로드 + 설치
+      if (btn) btn.textContent = "다운로드 중...";
+
+      let downloaded = 0;
+      let contentLength = 0;
+
+      await update.downloadAndInstall((event) => {
+        switch (event.event) {
+          case "Started":
+            contentLength = event.data.contentLength || 0;
+            break;
+          case "Progress":
+            downloaded += event.data.chunkLength;
+            if (btn && contentLength > 0) {
+              const pct = Math.round((downloaded / contentLength) * 100);
+              btn.textContent = `다운로드 ${pct}%`;
+            }
+            break;
+          case "Finished":
+            if (btn) btn.textContent = "설치 중...";
+            break;
+        }
+      });
+
+      // 설치 완료 → 재시작
+      const { relaunch } = await import("@tauri-apps/plugin-process");
+      await relaunch();
+    } catch (e: any) {
+      console.error("[updater] 실패:", e);
+      alert("업데이트 실패: " + (e.message || e));
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "업데이트";
+      }
+    }
   });
 }
 // ============================================================
@@ -478,7 +529,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   // 버전 체크 (패치 알림)
   (async () => {
     try {
-      const currentVersion = "0.1.0"; // TODO: package.json에서 자동
+      const currentVersion = "0.1.2"; // TODO: package.json에서 자동
       const res = await apiGet(`/version/check?current=${currentVersion}`);
       if (res.ok && res.hasUpdate) {
         showUpdateBanner(res.latest);
